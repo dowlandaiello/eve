@@ -8,9 +8,9 @@ particles.
 ## Evolution
 
 In Eve, evolution is represented by the emergence of some environmentally
-or statistically superior particle. Furthermore, this "statistical superiority"
-is defined as the ability of a given particle to withstand "decay" longer than
-its peers.
+or statistically superior particle. In the context of a simulation, statistical
+superiority generally refers to the ability of a given particle to withstand
+"decay" longer than its peers.
 
 ### Terminology
 
@@ -18,7 +18,16 @@ In order to clear up any confusion with the aforementioned definition, let's
 first describe the core components and terms associated with Eve:
 
 - The "macrocosm"
+
   Ultimately, Eve's purpose is to simulate. These "simulations" take place on
   what one might describe as a three-dimensional "stage." In contrast with our
-  universe, events occur on this "stage" in an entirely linear fashion. For this
-  reason, these three-dimensional "simulations" are referred to as "macrocosms."
+  universe, events occur on this "stage" in an entirely linear fashion--that
+  is, properties of the "macrocosm" are never altered in a way that affects
+  certain parts of the simulation differently than others. For this reason,
+  these three-dimensional "simulations" are referred to as "macrocosms."
+
+  In other words, a macrocosm is an ever-expanding, self-contained group of
+  particles. Each individual point in this three-dimensional body is
+  represented by a non-nil, functional particle (`c > 0 <= o`, where `c` is the
+  functional complexity of a particle and `o` is the operating functional
+  complexity of a particle).
