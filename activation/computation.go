@@ -38,18 +38,6 @@ type Computation struct {
 	Parameter Parameter // the parameter to the operation type
 }
 
-// Parameter is a data type used to hold arguments for an operation.
-type Parameter struct {
-	// an integer parameter
-	I   int
-	I16 int16
-	I32 int32
-	I64 int64
-
-	// an abstract parameter
-	A interface{}
-}
-
 /* BEGIN EXPORTED METHODS */
 
 // NewComputation initializes a new computation with the given parameters.
@@ -78,51 +66,6 @@ func (comp *Computation) Execute(param Parameter) Parameter {
 	default:
 		return comp.Parameter // Return the initial parameter
 	}
-}
-
-// add adds two parameters. Leaves the abstract parameter untouched.
-func add(x, y Parameter) Parameter {
-	x.I += y.I     // Add the i8s of both parameters
-	x.I16 += y.I16 // Add the i16s of both parameters
-	x.I32 += y.I32 // Add the i32s of both parameters
-	x.I64 += y.I64 // Add the i64s of both parameters
-
-	return x // Return the final parmaeter
-}
-
-// sub subtracts two parameters. Leaves the abstract parameter untouched.
-func sub(x, y Parameter) Parameter {
-	x.I -= y.I     // Subtract the two parameters
-	x.I16 -= y.I16 // Subtract the two parameters
-	x.I32 -= y.I32 // Subtract the two parameters
-	x.I64 -= y.I64 // Subtract the two parameters
-
-	return x // Return the final parameter
-}
-
-// mul multiplies two parameters. Leaves the abstract parameter untouched.
-func mul(x, y Parameter) Parameter {
-	x.I *= y.I     // Multiply the two parameters
-	x.I16 *= y.I16 // Multiply the two parameters
-	x.I32 *= y.I32 // Multiply the two parameters
-	x.I64 *= y.I64 // Multiply the two parameters
-
-	return x // Return the final parameter
-}
-
-// div divides two parameters. Leaves the abstract parameter untouched.
-func div(x, y Parameter) Parameter {
-	x.I /= y.I     // Divide the two parameters
-	x.I16 /= y.I16 // Divide the two parameters
-	x.I32 /= y.I32 // Divide the two parameters
-	x.I64 /= y.I64 // Divide the two parameters
-
-	return x // Return the final parameter
-}
-
-// IsNil checks if the parameter has any nil fields.
-func (p *Parameter) IsNil() bool {
-	return p.A == nil // Return whether or not each field is null
 }
 
 /* END EXPORTED METHODS */
