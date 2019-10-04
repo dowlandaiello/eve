@@ -86,7 +86,22 @@ func (comp *Computation) Execute(param Parameter) Parameter {
 	case Divide:
 		return param.Div(&comp.Parameter) // Return the divided parameter
 	case Inject:
-		return comp.Parameter // TODO: Finalize INJECT functionality
+		// Check parameter has abstract field
+		if comp.Parameter.A != nil && param.A != nil {
+			function, ok := comp.Parameter.A.(Computation) // Get the computation to inject into the node
+			if !ok {                                       // Check could not cast
+				return comp.Parameter // Return the initial parameter
+			}
+
+			destination, ok := param.A.(*Node) // Get the node to set the function of
+			if !ok {                           // Check could not cast
+				return comp.Parameter // Return the initial parameter
+			}
+
+			destination.Function = function // Set the function of the node
+		}
+
+		return comp.Parameter
 	default:
 		return comp.Parameter // Return the initial parameter
 	}
