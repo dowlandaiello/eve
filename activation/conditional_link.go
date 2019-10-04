@@ -35,6 +35,8 @@ type ConditionalLink struct {
 	Comparator Parameter // the parameter to compare the given value against (right side of operator)
 
 	Destination *Node // the node to trigger
+
+	Alive bool // whether or not the conditional link can activate under any circumstances
 }
 
 /* BEGIN EXPORTED METHODS */
@@ -52,6 +54,11 @@ func NewConditionalLink(condition Condition, comparator Parameter, destination *
 // CanActivate checks that the condition can activate, given a certain parameter.
 // NOTE: The parameter in this case refers to the value on the left side of the operator.
 func (link *ConditionalLink) CanActivate(param *Parameter) bool {
+	// Check the link is dead
+	if !link.Alive {
+		return false // Link cannot activate under any circumstances
+	}
+
 	// Handle different conditions
 	switch link.Condition {
 	// Handle the == operator
