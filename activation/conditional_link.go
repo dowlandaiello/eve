@@ -39,6 +39,16 @@ type ConditionalLink struct {
 
 /* BEGIN EXPORTED METHODS */
 
+// NewConditionalLink initializes a new conditional link with the given
+// condition, comparator (right side of comparisons), and destination node.
+func NewConditionalLink(condition Condition, comparator Parameter, destination *Node) ConditionalLink {
+	return ConditionalLink{
+		Condition:   condition,   // Set the condition
+		Comparator:  comparator,  // Set the comparator
+		Destination: destination, // Set the destination
+	} // Return the initialized link
+}
+
 // CanActivate checks that the condition can activate, given a certain parameter.
 // NOTE: The parameter in this case refers to the value on the left side of the operator.
 func (link *ConditionalLink) CanActivate(param *Parameter) bool {
@@ -66,7 +76,7 @@ func (link *ConditionalLink) CanActivate(param *Parameter) bool {
 	case Unconditional:
 		return true // condition should always activate
 	default:
-		return false // Unrecognizsed condition
+		return false // Unrecognized condition
 	}
 }
 

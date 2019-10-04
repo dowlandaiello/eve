@@ -1,6 +1,8 @@
 // Package activation implements a simple activation net.
 package activation
 
+import "math/rand"
+
 // Operation represents a type of computation being executed.
 type Operation int
 
@@ -30,6 +32,10 @@ const (
 	/* END PHYSICAL OPERATIONS */
 )
 
+// ComputationInitializationOption is an initialization option used to modify
+// part of a computation.
+type ComputationInitializationOption = func(computation Computation) Computation
+
 // Computation is an abstract data type representing a computation associated
 // with an activation net node.
 type Computation struct {
@@ -48,19 +54,37 @@ func NewComputation(computationType Operation, param Parameter) Computation {
 	} // Return the new computation
 }
 
+// RandomComputation initializes a new random computation with the given
+// initialization options.
+func RandomComputation(opts ...ComputationInitializationOption) Computation {
+	comp := NewComputation(Operation(rand.Intn(5)), RandomParameter()) // Initialize a random computation
+
+	return ApplyComputationOptions(comp, opts...) // Apply the options
+}
+
+// ApplyComputationOptions applies a variadic set of options to a given computation.
+func ApplyComputationOptions(comp Computation, opts ...ComputationInitializationOption) Computation {
+	// Check no more options
+	if len(opts) == 0 {
+		return comp // Return the final computation
+	}
+
+	return ApplyComputationOptions(opts[0](comp), opts[1:]...) // Apply the option
+}
+
 // Execute executes a computation with the given parameter. This parameter is
 // the applicant to the computation (e.g. 4 in 4 + 2).
 func (comp *Computation) Execute(param Parameter) Parameter {
 	// Handle different computation types
 	switch comp.Type {
 	case Add:
-		return add(param, comp.Parameter) // Return the added parameter
+		return param.Add(&comp.Parameter) // Return the added parameter
 	case Subtract:
-		return sub(param, comp.Parameter) // Return the subtracted parameter
+		return param.Sub(&comp.Parameter) // Return the subtracted parameter
 	case Multiply:
-		return mul(param, comp.Parameter) // Return the multiplied parameter
+		return param.Mul(&comp.Parameter) // Return the multiplied parameter
 	case Divide:
-		return div(param, comp.Parameter) // Return the divided parameter
+		return param.Div(&comp.Parameter) // Return the divided parameter
 	case Inject:
 		return comp.Parameter // TODO: Finalize INJECT functionality
 	default:
