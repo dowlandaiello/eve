@@ -19,4 +19,20 @@ func NewNode(function Computation, links []ConditionalLink) Node {
 	} // Return the initialized node
 }
 
+// Output is the output of the execution of the call stack of the node. NOTE:
+// This method is not pure, and has the potential to change global state.
+func (node *Node) Output(param Parameter) Parameter {
+	output := node.Function.Execute(param) // Execute the function
+
+	// Iterate through the node's links
+	for _, link := range node.Links {
+		// Check that the link is active and has a destination
+		if link.CanActivate(&param) && link.HasDestination() {
+			return link.Destination.Output(output) // Return the output of the execution
+		}
+	}
+
+	return output // Return the output of the computation
+}
+
 /* END EXPORTED METHODS */
