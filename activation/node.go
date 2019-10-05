@@ -94,9 +94,14 @@ func (node *Node) doCallstack(baseOutput Parameter) Parameter {
 	}
 
 	// Iterate through the node's links
-	for _, link := range node.Links {
+	for i, link := range node.Links {
 		// Check that the link is active and has a destination
 		if link.CanActivate(&baseOutput) && link.HasDestination() && !baseOutput.IsError() {
+			// Check the link should be killed
+			if rand.Intn(10) == 0 {
+				node.Links[i].Alive = false // Kill the link
+			}
+
 			return link.Destination.Output(baseOutput) // Return the output of the execution
 		}
 	}
