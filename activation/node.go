@@ -1,6 +1,10 @@
 // Package activation implements a simple activation net.
 package activation
 
+// NodeInitializationOption is an initialization option used to modify a node's
+// behavior.
+type NodeInitializationOption = func(node Node) Node
+
 // Node is a single point of computation in an activation net.
 type Node struct {
 	Function Computation // the function of the node
@@ -17,6 +21,33 @@ func NewNode(function Computation, links []ConditionalLink) Node {
 		Function: function, // Set the node's function
 		Links:    links,    // Set the node's links
 	} // Return the initialized node
+}
+
+// RandomNode initializes a new random node with the given initialization
+// options.
+func RandomNode(opts ...NodeInitializationOption) Node {
+	node := Node{
+		Function: RandomComputation(),      // Set the function to a random computation
+		Links:    RandomConditionalLinks(), // Set the conditional links to a random slice of conditional links
+	} // Initialize a random node
+
+	return ApplyNodeOptions(node, opts...) // Return the final node
+}
+
+// ApplyNodeOptions applies a variadic set of options to a given node.
+func ApplyNodeOptions(node Node, opts ...NodeInitializationOption) Node {
+	// Check no more options
+	if len(opts) == 0 {
+		return node // Return the final node
+	}
+
+	return ApplyNodeOptions(opts[0](node), opts[1:]...) // Apply all the options
+}
+
+// IsZero checks whether or not the node has been initialized with valid
+// contents.
+func (node *Node) IsZero() bool {
+	return len(node.Links) == 0 || node.Function.IsZero() // Return whether or not the node has a zero value
 }
 
 // Output is the output of the execution of the call stack of the node. NOTE:

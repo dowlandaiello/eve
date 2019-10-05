@@ -72,6 +72,11 @@ func ApplyComputationOptions(comp Computation, opts ...ComputationInitialization
 	return ApplyComputationOptions(opts[0](comp), opts[1:]...) // Apply the option
 }
 
+// IsZero checks whether or not the computation has been initialized.
+func (comp *Computation) IsZero() bool {
+	return (comp.Type > 4 || comp.Type < 0) || comp.Parameter.IsZero() // Return whether or not the computation has not been initialized
+}
+
 // Execute executes a computation with the given parameter. This parameter is
 // the applicant to the computation (e.g. 4 in 4 + 2).
 func (comp *Computation) Execute(param Parameter) Parameter {

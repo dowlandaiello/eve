@@ -1,8 +1,14 @@
 // Package activation implements a simple activation net.
 package activation
 
+import "math/rand"
+
 // Condition represents a type of condition regarding a link.
 type Condition int
+
+// ConditionalLinkInitializationOption is an initialization option used to
+// modify a conditional link's behavior.
+type ConditionalLinkInitializationOption = func(link ConditionalLink) ConditionalLink
 
 const (
 	// EqualTo is the == operator.
@@ -34,7 +40,7 @@ type ConditionalLink struct {
 
 	Comparator Parameter // the parameter to compare the given value against (right side of operator)
 
-	Destination *Node // the node to trigger
+	Destination Node // the node to trigger
 
 	Alive bool // whether or not the conditional link can activate under any circumstances
 }
@@ -43,12 +49,56 @@ type ConditionalLink struct {
 
 // NewConditionalLink initializes a new conditional link with the given
 // condition, comparator (right side of comparisons), and destination node.
-func NewConditionalLink(condition Condition, comparator Parameter, destination *Node) ConditionalLink {
+func NewConditionalLink(condition Condition, comparator Parameter, destination Node) ConditionalLink {
 	return ConditionalLink{
 		Condition:   condition,   // Set the condition
 		Comparator:  comparator,  // Set the comparator
 		Destination: destination, // Set the destination
 	} // Return the initialized link
+}
+
+// RandomConditionalLinks initializes a slice of random conditional links.
+func RandomConditionalLinks(opts ...[]ConditionalLinkInitializationOption) []ConditionalLink {
+	n := rand.Int() // Get a random number of links to initialize
+
+	var links []ConditionalLink // Declare a buffer to store the initialized links in
+
+	// Make the desired number of conditional links
+	for i := 0; i < n; i++ {
+		links = append(links, RandomConditionalLink(opts[i]...)) // Add the conditional link to the stack of links
+	}
+
+	return links // Return the generated links
+}
+
+// RandomConditionalLink initializes a new random conditional link with the
+// given initialization options.
+func RandomConditionalLink(opts ...ConditionalLinkInitializationOption) ConditionalLink {
+	var destination Node // Declare a buffer to store a potential destination in
+
+	// Generate a destination node based on a 50/50 coin flip
+	if rand.Intn(2) == 0 {
+		destination = RandomNode() // Set the destination to a random node
+	}
+
+	link := ConditionalLink{
+		Condition:   Condition(rand.Intn(7)), // Set the condition of the link to a random condition
+		Comparator:  RandomParameter(),       // Set the comparator of the link to a random parameter
+		Destination: destination,             // Set the destination to the conditionally generated destination node (exists only if 50/50 coin flip lands on heads)
+		Alive:       true,                    // All nodes are alive by default
+	} // Initialize a random link
+
+	return ApplyConditionalLinkOptions(link, opts...) // Apply the options
+}
+
+// ApplyConditionalLinkOptions applies a variadic set of options to a given conditional link.
+func ApplyConditionalLinkOptions(link ConditionalLink, opts ...ConditionalLinkInitializationOption) ConditionalLink {
+	// Check no more options
+	if len(opts) == 0 {
+		return link // Return the final link
+	}
+
+	return ApplyConditionalLinkOptions(opts[0](link), opts[1:]...) // Apply the rest of the options
 }
 
 // CanActivate checks that the condition can activate, given a certain parameter.
@@ -89,7 +139,7 @@ func (link *ConditionalLink) CanActivate(param *Parameter) bool {
 
 // HasDestination checks that the condition has a destination.
 func (link *ConditionalLink) HasDestination() bool {
-	return link.Destination != nil // Return whether or not the destination exists
+	return !link.Destination.IsZero() // Return whether or not the destination exists
 }
 
 /* END EXPORTED METHODS */

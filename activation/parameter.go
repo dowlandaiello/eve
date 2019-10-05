@@ -64,6 +64,11 @@ func (p *Parameter) Div(param *Parameter) Parameter {
 	return div(*p, *param) // Add the two parameters
 }
 
+// IsZero checks if the parameter has any zero-value fields.
+func (p *Parameter) IsZero() bool {
+	return (p.I == 0 && p.I16 == 0 && p.I32 == 0 && p.I64 == 0) || p.A == nil // Return whether or not the parameter has any nil fields
+}
+
 // IsNil checks if the parameter has any nil fields.
 func (p *Parameter) IsNil() bool {
 	return p.A == nil // Return whether or not each field is null
