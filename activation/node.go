@@ -12,6 +12,8 @@ type Node struct {
 	Function Computation // the function of the node
 
 	Links []ConditionalLink // the rest of the computation pathway
+
+	Alive bool // whether or not the node is alive
 }
 
 /* BEGIN EXPORTED METHODS */

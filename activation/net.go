@@ -1,7 +1,11 @@
 // Package activation implements a simple activation net.
 package activation
 
-import "sync"
+import (
+	"math"
+	"math/rand"
+	"sync"
+)
 
 // NetInitializationOption is an initialization option used to modify a net's
 // behavior.
@@ -57,6 +61,13 @@ func (net *Net) Output(params ...Parameter) Parameter {
 		wg.Add(1) // Add a worker
 
 		go func(i int, param Parameter, output *LockedParameter, wg *sync.WaitGroup) {
+			// Check the root node is not alive
+			if !net.RootNodes[i].Alive {
+				wg.Done() // Signal the worker has finished
+
+				return // Done
+			}
+
 			output.Mutex.Lock() // Get a lock for the output
 
 			output.P.Copy(net.RootNodes[i].Output(param)) // Set the output to the current execution
@@ -70,6 +81,16 @@ func (net *Net) Output(params ...Parameter) Parameter {
 	wg.Wait() // Wait for the workers to finish
 
 	return output.P // Return the output's parameter
+}
+
+// ApplyDecay applies some random amount of decay to the net.
+func (net *Net) ApplyDecay() {
+	i := rand.Intn(int(math.Pow(float64(len(net.RootNodes)), 2.0))) // Get the index of some dead node
+
+	// Check the index is in range
+	if i < len(net.RootNodes) && i >= 0 {
+		net.RootNodes[i].Alive = false // The node is no longer alive
+	}
 }
 
 /* END EXPORTED METHODS */
