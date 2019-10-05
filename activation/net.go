@@ -1,6 +1,8 @@
 // Package activation implements a simple activation net.
 package activation
 
+import "sync"
+
 // NetInitializationOption is an initialization option used to modify a net's
 // behavior.
 type NetInitializationOption = func(net Net) Net
@@ -37,6 +39,37 @@ func ApplyNetOptions(net Net, opts ...NetInitializationOption) Net {
 	}
 
 	return ApplyNetOptions(opts[0](net), opts[1:]...) // Apply all the options
+}
+
+// Output gets the output of an activation net.
+func (net *Net) Output(params ...Parameter) Parameter {
+	var output LockedParameter // Declare a buffer to store the final output in
+
+	var wg sync.WaitGroup // Get a wait group to handle the outputs w/
+
+	// Iterate through parameters
+	for i, param := range params {
+		// Check param out of bounds
+		if i >= len(net.RootNodes) {
+			break // Break
+		}
+
+		wg.Add(1) // Add a worker
+
+		go func(i int, param Parameter, output *LockedParameter, wg *sync.WaitGroup) {
+			output.Mutex.Lock() // Get a lock for the output
+
+			output.P.Copy(net.RootNodes[i].Output(param)) // Set the output to the current execution
+
+			output.Mutex.Unlock() // Unlock the output
+
+			wg.Done() // Signal the worker has finished
+		}(i, param, &output, &wg)
+	}
+
+	wg.Wait() // Wait for the workers to finish
+
+	return output.P // Return the output's parameter
 }
 
 /* END EXPORTED METHODS */
