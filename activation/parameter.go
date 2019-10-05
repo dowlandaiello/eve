@@ -23,9 +23,21 @@ type Parameter struct {
 
 /* BEGIN EXPORTED METHODS */
 
+// NewErrorParameter initializes a new abstract parameter with the given error.
+func NewErrorParameter(err error) Parameter {
+	return Parameter{
+		A: err, // Set the abstract value of the param to an error
+	} // Return the parameter
+}
+
 // RandomParameter initializes a new random parameter with the given
 // initialization options.
 func RandomParameter(opts ...ParameterInitializationOption) Parameter {
+	// Check the param should be abstract
+	if rand.Intn(2) == 0 {
+		return ApplyParameterOptions(randomAbstract(), opts...) // Return a final random abstract value
+	}
+
 	bitSize := rand.Intn(4) // Get a random bit size
 
 	param := randomParameterWithBitSize(bitSize) // Generate a random parameter from the generated bit size
@@ -64,6 +76,23 @@ func (p *Parameter) Div(param *Parameter) Parameter {
 	return div(*p, *param) // Add the two parameters
 }
 
+// IsError checks if the parameter is an error.
+func (p *Parameter) IsError() bool {
+	_, ok := p.A.(error) // Check whether or not the abstract value can be cast to an error
+
+	return ok // Return whether or not the cast was successful
+}
+
+// IsIdentity checks if the parameter is requesting the identity.
+func (p *Parameter) IsIdentity() bool {
+	// Check the parameter isn't an error
+	if !p.IsError() {
+		return false // Return false
+	}
+
+	return p.A.(error) == ErrIdentityUnknown // Return whether the error is the identity unknown error
+}
+
 // IsZero checks if the parameter has any zero-value fields.
 func (p *Parameter) IsZero() bool {
 	return (p.I == 0 && p.I16 == 0 && p.I32 == 0 && p.I64 == 0) || p.A == nil // Return whether or not the parameter has any nil fields
@@ -92,6 +121,13 @@ func (p *Parameter) GreaterThan(param *Parameter) bool {
 /* END EXPORTED METHODS */
 
 /* BEGIN INTERNAL METHODS */
+
+// randomAbstract generates a new parameter with a random abstract value.
+func randomAbstract() Parameter {
+	return Parameter{
+		A: RandomComputation(), // Set the abstract value to be a computation
+	} // Return the abstract parameter
+}
 
 // randomParameterWithBitSize generates a new parameter with random fields up
 // to a certain bit size.

@@ -72,15 +72,36 @@ func (node *Node) IsZero() bool {
 func (node *Node) Output(param Parameter) Parameter {
 	output := node.Function.Execute(param) // Execute the function
 
-	// Iterate through the node's links
-	for _, link := range node.Links {
-		// Check that the link is active and has a destination
-		if link.CanActivate(&param) && link.HasDestination() {
-			return link.Destination.Output(output) // Return the output of the execution
-		}
+	// Check the output is the identity
+	if output.IsIdentity() {
+		return node.doCallstack(Parameter{
+			A: node, // Set the abstract value of the param to the node
+		}) // pass the identity into the call stack
 	}
 
-	return output // Return the output of the computation
+	return node.doCallstack(output) // Do the node's call stack
 }
 
 /* END EXPORTED METHODS */
+
+/* BEGIN INTERNAL METHODS */
+
+// doCallstack passes a given base output into the node's call stack.
+func (node *Node) doCallstack(baseOutput Parameter) Parameter {
+	// Check no links
+	if len(node.Links) == 0 {
+		return baseOutput // Return the base output
+	}
+
+	// Iterate through the node's links
+	for _, link := range node.Links {
+		// Check that the link is active and has a destination
+		if link.CanActivate(&baseOutput) && link.HasDestination() && !baseOutput.IsError() {
+			return link.Destination.Output(baseOutput) // Return the output of the execution
+		}
+	}
+
+	return baseOutput // Return the base output
+}
+
+/* END INTERNAL METHODS */
