@@ -1,6 +1,8 @@
 // Package activation implements a simple activation net.
 package activation
 
+import "math/rand"
+
 // NodeInitializationOption is an initialization option used to modify a node's
 // behavior.
 type NodeInitializationOption = func(node Node) Node
@@ -21,6 +23,21 @@ func NewNode(function Computation, links []ConditionalLink) Node {
 		Function: function, // Set the node's function
 		Links:    links,    // Set the node's links
 	} // Return the initialized node
+}
+
+// RandomNodes initializes a new random slice of nodes with the given
+// initialization options.
+func RandomNodes(opts ...[]NodeInitializationOption) []Node {
+	n := rand.Int() // Get a random number of nodes to generate
+
+	var nodes []Node // Declare a buffer to store the generated nodes in
+
+	// Make the desired number of nodes
+	for i := 0; i < n; i++ {
+		nodes = append(nodes, RandomNode(opts[i]...)) // Add the generated node to the stack of generated nodes
+	}
+
+	return nodes // Return the generated nodes
 }
 
 // RandomNode initializes a new random node with the given initialization
