@@ -3,11 +3,19 @@ package activation
 
 import (
 	"math/rand"
+	"sync"
 )
 
 // ParameterInitializationOption is an initialization option used to modify a
 // parameter's behavior.
 type ParameterInitializationOption = func(param Parameter) Parameter
+
+// LockedParameter is a data type used to synchronize a parameter.
+type LockedParameter struct {
+	P Parameter // the parameter
+
+	Mutex sync.Mutex // the lock
+}
 
 // Parameter is a data type used to hold arguments for an operation.
 type Parameter struct {
@@ -53,6 +61,16 @@ func ApplyParameterOptions(param Parameter, opts ...ParameterInitializationOptio
 	}
 
 	return ApplyParameterOptions(opts[0](param), opts[1:]...) // Apply the option
+}
+
+// Copy copies the value of a given parameter into the parameter.
+func (p *Parameter) Copy(param Parameter) {
+	// Set each each of the parameter's values to that of the other param
+	p.I = param.I
+	p.I16 = param.I16
+	p.I32 = param.I32
+	p.I64 = param.I64
+	p.A = param.A
 }
 
 // Add adds two parameters. Leaves both parameters untouched.
