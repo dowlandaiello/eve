@@ -10,6 +10,8 @@ type InitializationOption = func(particle Particle) Particle
 // Particle is a basic particle.
 type Particle struct {
 	Net activation.Net // the particle's net
+
+	Value activation.Parameter // the value of the particle
 }
 
 /* BEGIN EXPORTED METHODS */
@@ -39,6 +41,21 @@ func ApplyParticleOptions(particle Particle, opts ...InitializationOption) Parti
 	}
 
 	return ApplyParticleOptions(opts[0](particle), opts[1:]...) // Apply the rest of the options
+}
+
+// NumAliveNodes gets the number of alive nodes pertaining to the particle.
+func (particle *Particle) NumAliveNodes() int {
+	i := 0 // Get a counter to increment for each of the root nodes
+
+	// Iterate through the particle's root nodes
+	for _, node := range particle.Net.RootNodes {
+		// Check the node is alive
+		if node.Alive {
+			i++ // Increment the counter
+		}
+	}
+
+	return i // Return the number of alive particles
 }
 
 // Alive checks whether or not the particle is alive.
