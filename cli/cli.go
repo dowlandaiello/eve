@@ -3,11 +3,16 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/juju/loggo"
+	"github.com/juju/loggo/loggocolor"
 	"github.com/urfave/cli"
 
+	"github.com/dowlandaiello/eve/common"
 	"github.com/dowlandaiello/eve/macrocosm"
 )
 
@@ -21,12 +26,36 @@ func NewCLI() cli.App {
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
 			Name:  "num-simulations",
-			Usage: "Set the number of simulations to spwarn",
+			Usage: "Set the number of simulations to spawn",
 			Value: 1,
+		},
+		cli.BoolFlag{
+			Name:        "disable-log-persistence",
+			Usage:       "Prevent logs from being persisted to the disk",
+			Destination: &common.DisableLogPersistence,
+		},
+		cli.StringFlag{
+			Name:        "logs-path",
+			Usage:       "Store logs in a particular path",
+			Value:       common.LogsDir,
+			Destination: &common.LogsDir,
 		},
 	}
 	app.Action = func(c *cli.Context) error {
 		n := c.Int("num-simulations") // Get the number of simulations to run
+
+		err := common.CreateDirIfNonExistent(c.String("logs-path")) // Create the logs dir
+		if err != nil {                                             // Check for errors
+			return err // Return the found error
+		}
+
+		logFile, err := os.OpenFile(filepath.FromSlash(fmt.Sprintf("%s/logs_%s.txt", common.LogsDir, time.Now().Format("2006-01-02_15-04-05"))), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666) // Create log file
+		if err != nil {                                                                                                                                                                   // Check for errors
+			return err // Return found error
+		}
+
+		loggo.ReplaceDefaultWriter(loggocolor.NewWriter(os.Stderr))                          // Enabled colored output
+		loggo.RegisterWriter("logs", loggo.NewSimpleWriter(logFile, loggo.DefaultFormatter)) // Register file writer
 
 		baseLogger := loggo.GetLogger("eve") // Get the base logger
 		loggo.ConfigureLoggers("eve=INFO")   // Get an info logger
@@ -45,18 +74,14 @@ func NewCLI() cli.App {
 		// Make n wait groups
 		for i := 0; i < n; i++ {
 			sim := macrocosm.NewMacrocosm() // Initialize a new simulation
-
-			logger := loggo.GetLogger(fmt.Sprintf("macrocosm_%d", i))   // Get a logger for the sim
-			loggo.ConfigureLoggers(fmt.Sprintf("macrocosm_%d=INFO", i)) // Get an info logger
+			sim.Identifier = i              // Set the identifier of the macrocosm
 
 			baseLogger.Infof("spawned macrocosm (%d/%d)", i+1, n) // Log spawned macrocosm
 
 			go func() {
 				for {
-					logger.Infof("expanding to layer %d", sim.Head[0].Z) // Log the expansion
-					sim.Expand()                                         // Expand the simulation
-					logger.Infof("polling...")
-					sim.Poll() // Poll the simulation
+					sim.Expand() // Expand the simulation
+					sim.Poll()   // Poll the simulation
 				}
 			}() // Run the simulation in a goroutine
 		}

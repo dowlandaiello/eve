@@ -24,6 +24,7 @@ func NewNode(function Computation, links []ConditionalLink) Node {
 	return Node{
 		Function: function, // Set the node's function
 		Links:    links,    // Set the node's links
+		Alive:    true,     // Set the node to alive by default
 	} // Return the initialized node
 }
 
@@ -55,6 +56,7 @@ func RandomNode(opts ...NodeInitializationOption) Node {
 	node := Node{
 		Function: RandomComputation(),      // Set the function to a random computation
 		Links:    RandomConditionalLinks(), // Set the conditional links to a random slice of conditional links
+		Alive:    true,                     // Set the node to alive by default
 	} // Initialize a random node
 
 	return ApplyNodeOptions(node, opts...) // Return the final node

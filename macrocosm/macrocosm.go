@@ -2,8 +2,11 @@
 package macrocosm
 
 import (
+	"fmt"
 	"math"
 	"sync"
+
+	"github.com/juju/loggo"
 
 	"github.com/dowlandaiello/eve/activation"
 	"github.com/dowlandaiello/eve/particle"
@@ -16,7 +19,11 @@ type Macrocosm struct {
 	Head  [2]Vector // the outermost non-nil particle
 	Shell [2]Vector // the outermost nil particle that should be created in the next round
 
+	Identifier int // the identifier of the macrocosm
+
 	Lock sync.Mutex // the macrocosm's lock
+
+	logger loggo.Logger // the macrocosm's logger
 }
 
 /* BEGIN EXPORTED METHODS */
@@ -46,6 +53,8 @@ func (macrocosm *Macrocosm) Poll() {
 			return                  // Stop execution
 		}
 
+		macrocosm.logger.Debugf("polling particle at vector {%d, %d, %d}", vec.X, vec.Y, vec.Z) // Log the pending poll
+
 		i := particle.NumAliveNodes() // Get the number of alive nodes for the particle
 
 		macrocosm.Lock.Unlock() // Unlock the macrocosm
@@ -71,6 +80,8 @@ func (macrocosm *Macrocosm) Poll() {
 
 		particle.Value = particle.Net.Output(params...) // Set the particle's value to the particle's output
 
+		macrocosm.logger.Debugf("particle at vector {%d, %d, %d} evaluated successfully: {i: %d, i16: %d, i32: %d, i64: %d, a: %+v}", vec.X, vec.Y, vec.Z, particle.Value.I, particle.Value.I16, particle.Value.I32, particle.Value.I64, particle.Value.A) // Log the successful evaluation
+
 		macrocosm.Lock.Unlock() // Unlock the macrocosm
 	}) // For each of the particles in the macrocosm, poll it
 }
@@ -79,6 +90,13 @@ func (macrocosm *Macrocosm) Poll() {
 // macrocosm as an "outer shell."
 func (macrocosm *Macrocosm) Expand() {
 	macrocosm.Lock.Lock() // Lock the macrocosm
+
+	// Check the logger is not enabled
+	if !macrocosm.logger.IsInfoEnabled() {
+		macrocosm.logger = loggo.GetLogger(fmt.Sprintf("macrocosm_%d", macrocosm.Identifier)) // Set the logger of the macrocosm
+
+		loggo.ConfigureLoggers(fmt.Sprintf("macrocosm_%d=DEBUG", macrocosm.Identifier))
+	}
 
 	// Check the macrocosm has no head
 	if _, ok := macrocosm.Particles[Zero()]; !ok {
@@ -90,10 +108,14 @@ func (macrocosm *Macrocosm) Expand() {
 
 		macrocosm.Lock.Unlock() // Unlock the macrocosm
 
+		macrocosm.logger.Debugf("root layer initialized successfully") // Log the successful expansion
+
 		return // Stop execution
 	}
 
 	upperCorner, lowerCorner := macrocosm.Shell[0], macrocosm.Shell[1] // Get the macrocosm's shell corners
+
+	macrocosm.logger.Infof("expanding to layer %d", upperCorner.Z) // Log the pending expansion
 
 	macrocosm.Lock.Unlock() // Unlock the macrocosm
 

@@ -59,6 +59,7 @@ func NewConditionalLink(condition Condition, comparator Parameter, destination N
 		Condition:   condition,   // Set the condition
 		Comparator:  comparator,  // Set the comparator
 		Destination: destination, // Set the destination
+		Alive:       true,        // Set the conditional link to alive by default
 	} // Return the initialized link
 }
 
