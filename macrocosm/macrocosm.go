@@ -37,6 +37,8 @@ func NewMacrocosm() Macrocosm {
 
 // Poll executes the current frame of the macrocosm.
 func (macrocosm *Macrocosm) Poll() {
+	macrocosm.logger.Infof("polling...") // Log the pending evaluation
+
 	DoForVectorsBetween(macrocosm.Head[0], macrocosm.Head[1], func(vec Vector) {
 		// Check no particle at the vector
 		if _, ok := macrocosm.Particles[vec]; !ok {
@@ -64,20 +66,14 @@ func (macrocosm *Macrocosm) Poll() {
 		macrocosm.logger.Debugf("collecting call stack parameters for particle at vector {%d, %d, %d}", vec.X, vec.Y, vec.Z) // Log the pending parameterization
 
 		DoForVectorsBetween(vec.CornerAtLayer(true, int(math.Ceil(float64(i)/9.0))), vec.CornerAtLayer(false, int(math.Ceil(float64(i)/9.0))), func(vec Vector) {
-			macrocosm.Lock.Lock() // Lock the macrocosm
-
 			// Check no particles at vector
 			if _, ok := macrocosm.Particles[vec]; !ok {
-				macrocosm.Lock.Unlock() // Unlock the macrocosm
-
 				return // Stop execution
 			}
 
 			macrocosm.logger.Debugf("appending parameter {i: %d, i16: %d, i32: %d, i64: %d, a: %+v} to call stack of particle {%d, %d, %d}", macrocosm.Particles[vec].Value.I, macrocosm.Particles[vec].Value.I16, macrocosm.Particles[vec].Value.I32, macrocosm.Particles[vec].Value.I64, macrocosm.Particles[vec].Value.A, vec.X, vec.Y, vec.Z) // Log the successful evaluation
 
 			params = append(params, macrocosm.Particles[vec].Value) // Add a parameter to the parameters slice
-
-			macrocosm.Lock.Unlock() // Unlock the macrocosm
 		}) // For each of the surrounding particles, check that
 
 		macrocosm.Lock.Lock() // Lock the macrocosm
