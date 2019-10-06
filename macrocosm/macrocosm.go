@@ -61,6 +61,8 @@ func (macrocosm *Macrocosm) Poll() {
 
 		var params []activation.Parameter // Get a slice to store the particle's execution parameters in
 
+		macrocosm.logger.Debugf("collecting call stack parameters for particle at vector {%d, %d, %d}", vec.X, vec.Y, vec.Z) // Log the pending parameterization
+
 		DoForVectorsBetween(vec.CornerAtLayer(true, int(math.Ceil(float64(i)/9.0))), vec.CornerAtLayer(false, int(math.Ceil(float64(i)/9.0))), func(vec Vector) {
 			macrocosm.Lock.Lock() // Lock the macrocosm
 
@@ -71,12 +73,16 @@ func (macrocosm *Macrocosm) Poll() {
 				return // Stop execution
 			}
 
+			macrocosm.logger.Debugf("appending parameter {i: %d, i16: %d, i32: %d, i64: %d, a: %+v} to call stack of particle {%d, %d, %d}", macrocosm.Particles[vec].Value.I, macrocosm.Particles[vec].Value.I16, macrocosm.Particles[vec].Value.I32, macrocosm.Particles[vec].Value.I64, macrocosm.Particles[vec].Value.A, vec.X, vec.Y, vec.Z) // Log the successful evaluation
+
 			params = append(params, macrocosm.Particles[vec].Value) // Add a parameter to the parameters slice
 
 			macrocosm.Lock.Unlock() // Unlock the macrocosm
 		}) // For each of the surrounding particles, check that
 
 		macrocosm.Lock.Lock() // Lock the macrocosm
+
+		macrocosm.logger.Debugf("evaluating particle at vector {%d, %d, %d}...", vec.X, vec.Y, vec.Z) // Log the pending evaluation
 
 		particle.Value = particle.Net.Output(params...) // Set the particle's value to the particle's output
 
