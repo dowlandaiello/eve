@@ -30,13 +30,20 @@ func NewNode(function Computation, links []ConditionalLink) Node {
 // RandomNodes initializes a new random slice of nodes with the given
 // initialization options.
 func RandomNodes(opts ...[]NodeInitializationOption) []Node {
-	n := rand.Int() // Get a random number of nodes to generate
+	n := rand.Intn(666) // Get a random number of nodes to generate
 
 	var nodes []Node // Declare a buffer to store the generated nodes in
 
 	// Make the desired number of nodes
 	for i := 0; i < n; i++ {
-		nodes = append(nodes, RandomNode(opts[i]...)) // Add the generated node to the stack of generated nodes
+		// Check options for the node exist
+		if len(opts) > n {
+			nodes = append(nodes, RandomNode(opts[i]...)) // Add the generated node to the stack of generated nodes
+
+			continue // Continue
+		}
+
+		nodes = append(nodes, RandomNode()) // Add the generated node to the stack of generated nodes
 	}
 
 	return nodes // Return the generated nodes

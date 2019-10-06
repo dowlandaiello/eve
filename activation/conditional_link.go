@@ -1,7 +1,12 @@
 // Package activation implements a simple activation net.
 package activation
 
-import "math/rand"
+import (
+	"math"
+	"math/rand"
+
+	"github.com/dowlandaiello/eve/common"
+)
 
 // Condition represents a type of condition regarding a link.
 type Condition int
@@ -59,13 +64,20 @@ func NewConditionalLink(condition Condition, comparator Parameter, destination N
 
 // RandomConditionalLinks initializes a slice of random conditional links.
 func RandomConditionalLinks(opts ...[]ConditionalLinkInitializationOption) []ConditionalLink {
-	n := rand.Int() // Get a random number of links to initialize
+	n := rand.Intn(int(math.Pow(4, float64(rand.Intn(common.ComputationalProwess))))) // Get a random number of links to initialize
 
 	var links []ConditionalLink // Declare a buffer to store the initialized links in
 
 	// Make the desired number of conditional links
 	for i := 0; i < n; i++ {
-		links = append(links, RandomConditionalLink(opts[i]...)) // Add the conditional link to the stack of links
+		// Check options for the link exist
+		if len(opts) > n {
+			links = append(links, RandomConditionalLink(opts[i]...)) // Add the conditional link to the stack of links
+
+			continue // Continue
+		}
+
+		links = append(links, RandomConditionalLink()) // Add the conditional link to the stack of links
 	}
 
 	return links // Return the generated links

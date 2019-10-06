@@ -98,17 +98,28 @@ func VectorsBetween(a, b Vector) []Vector {
 func DoForVectorsBetween(a, b Vector, callback func(vec Vector)) {
 	var wg sync.WaitGroup // Get a wait group
 
-	distance := b.Sub(a)          // Get the distance between the points
-	absDistance := distance.Abs() // Get the absolute value of the distance
+	distance := b.Sub(a)                                // Get the distance between the points
+	absDistance := distance.Abs()                       // Get the absolute value of the distance
+	realDistance := absDistance.Add(NewVector(1, 1, 1)) // Add one to the final distance
 
-	wg.Add(int(absDistance.Product())) // Make enough wait groups for the number of nodes in between a and b
+	wg.Add(int(realDistance.Product())) // Make enough wait groups for the number of nodes in between a and b
 
-	// Make the amount of rows in between x and y
-	for z := a.Z; z <= b.Z; z++ {
+	var lesser Vector  // Declare a buffer to store the lesser vector in
+	var greater Vector // Declare a buffer to store the greater vector in
+
+	if a.Product() < b.Product() {
+		lesser = a  // Set the lesser vector
+		greater = b // Set the greater vector
+	} else {
+		lesser = b  // Set the lesser vector
+		greater = a // Set the greater vector
+	}
+
+	for z := lesser.Z; z <= greater.Z; z++ {
 		// Make the amount of y groups in between x and y
-		for y := a.Y; y <= b.Y; y++ {
+		for y := lesser.Y; y <= greater.Y; y++ {
 			// Do the same for the x values
-			for x := a.X; x <= b.X; x++ {
+			for x := lesser.X; x <= greater.X; x++ {
 				go func(x, y, z int64, wg *sync.WaitGroup) {
 					callback(NewVector(x, y, z)) // Run the callback with the vector
 
