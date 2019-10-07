@@ -35,17 +35,28 @@ func NewMacrocosm() Macrocosm {
 	} // Return the initialized macrocosm
 }
 
+// HasParticle checks that a particle exists at the given vector, vec.
+func (macrocosm *Macrocosm) HasParticle(vec Vector) (particle.Particle, bool) {
+	macrocosm.Lock.Lock() // Lock the macrocosm
+
+	particle, ok := macrocosm.Particles[vec] // Get an existence signal from the particles map
+
+	macrocosm.Lock.Unlock() // Unlock the macrocosm
+
+	return particle, ok // Return whether or not the particle exists
+}
+
 // Poll executes the current frame of the macrocosm.
 func (macrocosm *Macrocosm) Poll() {
 	macrocosm.logger.Infof("polling...") // Log the pending evaluation
 
 	DoForVectorsBetween(macrocosm.Head[0], macrocosm.Head[1], func(vec Vector) {
+		particle, ok := macrocosm.HasParticle(vec) // Get the particle at the given vector
+
 		// Check no particle at the vector
-		if _, ok := macrocosm.Particles[vec]; !ok {
+		if !ok {
 			return // Stop execution
 		}
-
-		particle := macrocosm.Particles[vec] // Get the particle at the given vector
 
 		// Check the particlee is dead
 		if !particle.Alive() {
@@ -62,16 +73,23 @@ func (macrocosm *Macrocosm) Poll() {
 		macrocosm.logger.Debugf("polling particle at vector {%d, %d, %d}", vec.X, vec.Y, vec.Z) // Log the pending poll
 
 		var params []activation.Parameter // Get a slice to store the particle's execution parameters in
+		paramsMutex := sync.Mutex{}       // Get a synchronization lock for the params slice
 
 		macrocosm.logger.Debugf("collecting call stack parameters (%d) for particle at vector {%d, %d, %d}", i, vec.X, vec.Y, vec.Z) // Log the pending parameterization
 
-		DoForVectorsBetween(vec.CornerAtLayer(true, int(math.Ceil(float64(i)/9.0))), vec.CornerAtLayer(false, int(math.Ceil(float64(i)/9.0))), func(vec Vector) {
+		DoForVectorsBetween(vec.CornerAtLayer(true, int(math.Ceil(float64(i)/9.0))), vec.CornerAtLayer(false, int(math.Ceil(float64(i)/9.0))), func(pVec Vector) {
+			pParticle, ok := macrocosm.HasParticle(pVec) // Get the particle at the given vector
+
 			// Check no particles at vector
-			if _, ok := macrocosm.Particles[vec]; !ok {
+			if !ok {
 				return // Stop execution
 			}
 
-			params = append(params, macrocosm.Particles[vec].Value) // Add a parameter to the parameters slice
+			paramsMutex.Lock() // Lock the params slice
+
+			params = append(params, pParticle.Value) // Add a parameter to the parameters slice
+
+			paramsMutex.Unlock() // Unlock the params slice
 		}) // For each of the surrounding particles, check that
 
 		macrocosm.logger.Debugf("evaluating particle at vector {%d, %d, %d}...", vec.X, vec.Y, vec.Z) // Log the pending evaluation
@@ -99,7 +117,7 @@ func (macrocosm *Macrocosm) Expand() {
 	}
 
 	// Check the macrocosm has no head
-	if _, ok := macrocosm.Particles[Zero()]; !ok {
+	if _, ok := macrocosm.HasParticle(Zero()); !ok {
 		loc := Zero() // Get the location of the root particle
 
 		macrocosm.Particles[loc] = particle.RandomParticle()             // Set the root particle to a random particle
@@ -117,7 +135,7 @@ func (macrocosm *Macrocosm) Expand() {
 
 	DoForVectorsBetween(upperCorner, lowerCorner, func(vec Vector) {
 		// Check a particle doesn't exist at the vector
-		if _, ok := macrocosm.Particles[vec]; !ok {
+		if _, ok := macrocosm.HasParticle(vec); !ok {
 			rand := particle.RandomParticle() // Generate a random particle
 
 			macrocosm.Lock.Lock() // Lock the macrocosm

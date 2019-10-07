@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/juju/loggo"
 	"github.com/juju/loggo/loggocolor"
 	"github.com/urfave/cli"
-
 	"github.com/dowlandaiello/eve/common"
 	"github.com/dowlandaiello/eve/macrocosm"
 )
@@ -67,10 +65,6 @@ func NewCLI() cli.App {
 
 		baseLogger.Infof("preparing to spawn %d macrocosms", n) // Log spawning macrocosm
 
-		var wg sync.WaitGroup // Initialize a wait group for the simulations
-
-		wg.Add(n) // Add n simulations
-
 		// Make n wait groups
 		for i := 0; i < n; i++ {
 			sim := macrocosm.NewMacrocosm() // Initialize a new simulation
@@ -78,18 +72,24 @@ func NewCLI() cli.App {
 
 			baseLogger.Infof("spawned macrocosm (%d/%d)", i+1, n) // Log spawned macrocosm
 
-			go func() {
-				for {
-					sim.Expand() // Expand the simulation
-					sim.Poll()   // Poll the simulation
-				}
-			}() // Run the simulation in a goroutine
-		}
+			// Check on last iteration
+			if i == n - 1 {
+				start(&sim) // Start the simulation
+			}
 
-		wg.Wait() // Wait for the simulations to never finish
+			go start(&sim) // Start the simulation
+		}
 
 		return nil // Return nil
 	}
 
 	return *app // Return the CLI app
+}
+
+// start starts the simulation.
+func start(sim *macrocosm.Macrocosm) {
+	for {
+		sim.Expand() // Expand the simulation
+		sim.Poll() // Poll the simulation
+	}
 }
