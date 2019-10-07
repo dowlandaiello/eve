@@ -68,9 +68,11 @@ func (net *Net) Output(params ...Parameter) Parameter {
 				return // Done
 			}
 
+			evaluatedOutput := net.RootNodes[i].Output(param) // Get the output of the node
+
 			output.Mutex.Lock() // Get a lock for the output
 
-			output.P.Copy(net.RootNodes[i].Output(param)) // Set the output to the current execution
+			output.P.Copy(evaluatedOutput) // Set the output to the current execution
 
 			output.Mutex.Unlock() // Unlock the output
 

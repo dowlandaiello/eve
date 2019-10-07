@@ -214,6 +214,11 @@ func mul(x, y Parameter) Parameter {
 
 // div divides two parameters. Leaves the abstract parameter untouched.
 func div(x, y Parameter) Parameter {
+	// Check the second param is zero
+	if y.IsZero() {
+		return Parameter{} // Return a zero-val parameter
+	}
+	
 	x.I /= y.I     // Divide the two parameters
 	x.I16 /= y.I16 // Divide the two parameters
 	x.I32 /= y.I32 // Divide the two parameters

@@ -45,33 +45,31 @@ func (macrocosm *Macrocosm) Poll() {
 			return // Stop execution
 		}
 
-		macrocosm.Lock.Lock() // Lock the macrocosm
-
 		particle := macrocosm.Particles[vec] // Get the particle at the given vector
 
 		// Check the particlee is dead
 		if !particle.Alive() {
-			macrocosm.Lock.Unlock() // Unlock the macrocosm
-			return                  // Stop execution
+			return // Stop execution
 		}
 
 		i := particle.NumAliveNodes() // Get the number of alive nodes for the particle
 
-		macrocosm.Lock.Unlock() // Unlock the macrocosm
+		// Check the outermost param is outside the bounds of the sim
+		if int64(math.Ceil(float64(i)/9.0)) > macrocosm.Head[0].Z {
+			i = int(macrocosm.Head[0].Z) // Set the outmermost param layer to the head's height
+		}
 
 		macrocosm.logger.Debugf("polling particle at vector {%d, %d, %d}", vec.X, vec.Y, vec.Z) // Log the pending poll
 
 		var params []activation.Parameter // Get a slice to store the particle's execution parameters in
 
-		macrocosm.logger.Debugf("collecting call stack parameters for particle at vector {%d, %d, %d}", vec.X, vec.Y, vec.Z) // Log the pending parameterization
+		macrocosm.logger.Debugf("collecting call stack parameters (%d) for particle at vector {%d, %d, %d}", i, vec.X, vec.Y, vec.Z) // Log the pending parameterization
 
 		DoForVectorsBetween(vec.CornerAtLayer(true, int(math.Ceil(float64(i)/9.0))), vec.CornerAtLayer(false, int(math.Ceil(float64(i)/9.0))), func(vec Vector) {
 			// Check no particles at vector
 			if _, ok := macrocosm.Particles[vec]; !ok {
 				return // Stop execution
 			}
-
-			macrocosm.logger.Debugf("appending parameter {i: %d, i16: %d, i32: %d, i64: %d, a: %+v} to call stack of particle {%d, %d, %d}", macrocosm.Particles[vec].Value.I, macrocosm.Particles[vec].Value.I16, macrocosm.Particles[vec].Value.I32, macrocosm.Particles[vec].Value.I64, macrocosm.Particles[vec].Value.A, vec.X, vec.Y, vec.Z) // Log the successful evaluation
 
 			params = append(params, macrocosm.Particles[vec].Value) // Add a parameter to the parameters slice
 		}) // For each of the surrounding particles, check that
