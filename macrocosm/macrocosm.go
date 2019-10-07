@@ -55,11 +55,11 @@ func (macrocosm *Macrocosm) Poll() {
 			return                  // Stop execution
 		}
 
-		macrocosm.logger.Debugf("polling particle at vector {%d, %d, %d}", vec.X, vec.Y, vec.Z) // Log the pending poll
-
 		i := particle.NumAliveNodes() // Get the number of alive nodes for the particle
 
 		macrocosm.Lock.Unlock() // Unlock the macrocosm
+
+		macrocosm.logger.Debugf("polling particle at vector {%d, %d, %d}", vec.X, vec.Y, vec.Z) // Log the pending poll
 
 		var params []activation.Parameter // Get a slice to store the particle's execution parameters in
 
@@ -76,23 +76,23 @@ func (macrocosm *Macrocosm) Poll() {
 			params = append(params, macrocosm.Particles[vec].Value) // Add a parameter to the parameters slice
 		}) // For each of the surrounding particles, check that
 
-		macrocosm.Lock.Lock() // Lock the macrocosm
-
 		macrocosm.logger.Debugf("evaluating particle at vector {%d, %d, %d}...", vec.X, vec.Y, vec.Z) // Log the pending evaluation
 
-		particle.Value = particle.Net.Output(params...) // Set the particle's value to the particle's output
+		output := particle.Net.Output(params...) // Evaluate the particle
+
+		macrocosm.Lock.Lock() // Lock the macrocosm
+
+		particle.Value = output // Set the particle's value to the particle's output
+
+		macrocosm.Lock.Lock() // Unlock the macrocosm
 
 		macrocosm.logger.Debugf("particle at vector {%d, %d, %d} evaluated successfully: {i: %d, i16: %d, i32: %d, i64: %d, a: %+v}", vec.X, vec.Y, vec.Z, particle.Value.I, particle.Value.I16, particle.Value.I32, particle.Value.I64, particle.Value.A) // Log the successful evaluation
-
-		macrocosm.Lock.Unlock() // Unlock the macrocosm
 	}) // For each of the particles in the macrocosm, poll it
 }
 
 // Expand generates a new round of particles, and attaches them to the existing
 // macrocosm as an "outer shell."
 func (macrocosm *Macrocosm) Expand() {
-	macrocosm.Lock.Lock() // Lock the macrocosm
-
 	// Check the logger is not enabled
 	if !macrocosm.logger.IsInfoEnabled() {
 		macrocosm.logger = loggo.GetLogger(fmt.Sprintf("macrocosm_%d", macrocosm.Identifier)) // Set the logger of the macrocosm
@@ -108,8 +108,6 @@ func (macrocosm *Macrocosm) Expand() {
 		macrocosm.Head = [2]Vector{loc, loc}                             // Set the head to the location
 		macrocosm.Shell = [2]Vector{loc.Corner(true), loc.Corner(false)} // Set the head to the location's corners
 
-		macrocosm.Lock.Unlock() // Unlock the macrocosm
-
 		macrocosm.logger.Debugf("root layer initialized successfully") // Log the successful expansion
 
 		return // Stop execution
@@ -119,25 +117,21 @@ func (macrocosm *Macrocosm) Expand() {
 
 	macrocosm.logger.Infof("expanding to layer %d", upperCorner.Z) // Log the pending expansion
 
-	macrocosm.Lock.Unlock() // Unlock the macrocosm
-
 	DoForVectorsBetween(upperCorner, lowerCorner, func(vec Vector) {
-		macrocosm.Lock.Lock() // Lock the macrocosm
-
 		// Check a particle doesn't exist at the vector
 		if _, ok := macrocosm.Particles[vec]; !ok {
-			macrocosm.Particles[vec] = particle.RandomParticle() // Set the particle to a random particle
+			rand := particle.RandomParticle() // Generate a random particle
+
+			macrocosm.Lock.Lock() // Lock the macrocosm
+
+			macrocosm.Particles[vec] = rand // Set the particle to a random particle
+
+			macrocosm.Lock.Unlock() // Unlock the macrocosm
 		}
-
-		macrocosm.Lock.Unlock() // Unlock the macrocosm
 	}) // Make each of the enclosing particles
-
-	macrocosm.Lock.Lock() // Lock the macrocosm
 
 	macrocosm.Head = macrocosm.Shell                                                               // Set the head of the macrocosm to its old shell
 	macrocosm.Shell = [2]Vector{macrocosm.Shell[0].Corner(true), macrocosm.Shell[1].Corner(false)} // Expand the macrocosm's head
-
-	macrocosm.Lock.Unlock() // Unlock the macrocosm
 }
 
 /* END EXPORTED METHODS */
