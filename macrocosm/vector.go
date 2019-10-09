@@ -223,6 +223,11 @@ func (vector *Vector) Corner(upper bool) Vector {
 	return vector.Sub(NewVector(1, 1, 1)) // Return the lower
 }
 
+// CornersAtParamCount gets the required vectors to satisfy a parameter count.
+func (vector *Vector) CornersAtParamCount(numParams int) (Vector, Vector) {
+	return vector.cornersAtParamCount(*vector, *vector, numParams, 0, 1) // Return the final corners
+}
+
 // CornerAtLayer gets the corner n layers away from a vector.
 func (vector *Vector) CornerAtLayer(upper bool, i int) Vector {
 	corner := vector.Corner(upper) // Get the vector's corner
@@ -253,6 +258,16 @@ func (vector *Vector) deriveMagnitudeCondition(axis Axis) func(i, axisVal int64)
 	return func(i, axisVal int64) bool {
 		return i <= axisVal
 	} // Return true if the current index is less than the axis val
+}
+
+// cornersAtParamCount gets the vectors required to satisfy a parameter count.
+func (vector *Vector) cornersAtParamCount(a, b Vector, numParams int, numGained int, round int) (Vector, Vector) {
+	// Check satisfies number of parameters
+	if numGained >= numParams {
+		return a, b // Return the vectors
+	}
+
+	return vector.cornersAtParamCount(a.Corner(true), b.Corner(false), numParams, int(math.Pow(float64(round+2), 3)), round+1) // Return the final corners
 }
 
 /* END INTERNAL METHODS */

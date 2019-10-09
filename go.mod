@@ -8,5 +8,6 @@ require (
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.9 // indirect
+	github.com/orcaman/concurrent-map v0.0.0-20190826125027-8c72a8bb44f6
 	github.com/urfave/cli v1.22.1
 )

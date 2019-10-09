@@ -3,7 +3,6 @@ package macrocosm
 
 import (
 	"fmt"
-	"math"
 	"sync"
 
 	"github.com/juju/loggo"
@@ -21,7 +20,7 @@ type Macrocosm struct {
 
 	Identifier int // the identifier of the macrocosm
 
-	Lock sync.Mutex // the macrocosm's lock
+	Lock sync.RWMutex // the macrocosm's lock
 
 	logger loggo.Logger // the macrocosm's logger
 }
@@ -58,22 +57,19 @@ func (macrocosm *Macrocosm) Poll() {
 			return // Stop execution
 		}
 
-		// Check the particlee is dead
+		// Check the particle is dead
 		if !particle.Alive() {
 			return // Stop execution
 		}
 
 		i := particle.NumAliveNodes() // Get the number of alive nodes for the particle
 
-		// Check the outermost param is outside the bounds of the sim
-		if int64(math.Ceil(float64(i)/9.0)) > macrocosm.Head[0].Z {
-			i = int(macrocosm.Head[0].Z) // Set the outmermost param layer to the head's height
-		}
+		a, b := vec.CornersAtParamCount(i) // Get the corners at the given number of parameters
 
 		var params []activation.Parameter // Get a slice to store the particle's execution parameters in
 		paramsMutex := sync.Mutex{}       // Get a synchronization lock for the params slice
 
-		DoForVectorsBetween(vec.CornerAtLayer(true, int(math.Ceil(float64(i)/9.0))), vec.CornerAtLayer(false, int(math.Ceil(float64(i)/9.0))), func(pVec Vector) {
+		DoForVectorsBetween(a, b, func(pVec Vector) {
 			pParticle, ok := macrocosm.HasParticle(pVec) // Get the particle at the given vector
 
 			// Check no particles at vector
@@ -90,11 +86,13 @@ func (macrocosm *Macrocosm) Poll() {
 
 		output := particle.Net.Output(params...) // Evaluate the particle
 
-		macrocosm.Lock.Lock() // Lock the macrocosm
-
 		particle.Value = output // Set the particle's value to the particle's output
 
-		macrocosm.Lock.Unlock() // Unlock the macrocosm
+		macrocosm.Lock.Lock() // Lock the macrocosm
+
+		macrocosm.Particles[vec] = particle //
+
+		macrocosm.Lock.Unlock() // Lock the macrocosm
 
 		macrocosm.logger.Debugf("particle at vector {%d, %d, %d} evaluated successfully: {i: %d, i16: %d, i32: %d, i64: %d, a: %+v}", vec.X, vec.Y, vec.Z, particle.Value.I, particle.Value.I16, particle.Value.I32, particle.Value.I64, particle.Value.A) // Log the successful evaluation
 	}) // For each of the particles in the macrocosm, poll it
