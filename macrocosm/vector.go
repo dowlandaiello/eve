@@ -94,7 +94,7 @@ func VectorsBetween(a, b Vector) []Vector {
 }
 
 // DoForVectorsBetween runs a given callback for each of the vectors between
-// points a and b.
+// points a (inclusive) and b (inclusive).
 func DoForVectorsBetween(a, b Vector, callback func(vec Vector)) {
 	var wg sync.WaitGroup // Get a wait group
 
@@ -104,32 +104,30 @@ func DoForVectorsBetween(a, b Vector, callback func(vec Vector)) {
 
 	wg.Add(int(realDistance.Product())) // Make enough wait groups for the number of nodes in between a and b
 
-	var lesser Vector  // Declare a buffer to store the lesser vector in
-	var greater Vector // Declare a buffer to store the greater vector in
+	mag := a.Magnitude(b) // Get the magnitude for b
 
-	if a.Product() < b.Product() {
-		lesser = a  // Set the lesser vector
-		greater = b // Set the greater vector
-	} else {
-		lesser = b  // Set the lesser vector
-		greater = a // Set the greater vector
-	}
+	zCondition := mag.deriveMagnitudeCondition(Z) // Derive a magnitude condition
 
-	for z := lesser.Z; z <= greater.Z; z++ {
+	// Make the amount of z groups in between x and y
+	for z := a.Z; zCondition(z, b.Z); z += mag.Z {
+		yCondition := mag.deriveMagnitudeCondition(Y) // Derive a magnitude condition
+
 		// Make the amount of y groups in between x and y
-		for y := lesser.Y; y <= greater.Y; y++ {
+		for y := a.Y; yCondition(y, b.Y); y += mag.Y {
+			xCondition := mag.deriveMagnitudeCondition(X) // Derive a magnitude condition
+
 			// Do the same for the x values
-			for x := lesser.X; x <= greater.X; x++ {
+			for x := a.X; xCondition(x, b.X); x += mag.X {
 				go func(x, y, z int64, wg *sync.WaitGroup) {
 					callback(NewVector(x, y, z)) // Run the callback with the vector
 
-					wg.Done() // Done with the current callback
+					wg.Done() // Done!
 				}(x, y, z, &wg) // Pass the coordinates and wait group into the goroutine
 			}
 		}
 	}
 
-	wg.Wait() // Wait for all of the callbacks to terminate
+	// wg.Wait() // Wait for all of the callbacks to terminate
 }
 
 // Values gets a slice of the vector's values.
@@ -145,6 +143,60 @@ func (vector *Vector) Product() int64 {
 // Abs gets the absolute value of the vector.
 func (vector *Vector) Abs() Vector {
 	return NewVector(int64(math.Abs(float64(vector.X))), int64(math.Abs(float64(vector.Y))), int64(math.Abs(float64(vector.Z)))) // Return the absolute value
+}
+
+// Magnitude gets the direction a particle vector must travel to reach a given
+// vector.
+func (vector *Vector) Magnitude(vec Vector) Vector {
+	var values []int64 // Declare a final magnitude vector values slice
+
+	// Iterate through the axes
+	for i := Axis(0); i <= Z; i++ {
+		// Check the vector is greater on the given axis
+		if vector.Values()[i] > vec.Values()[i] {
+			values = append(values, -1) // Must move backwards
+
+			continue // Continue
+		}
+
+		values = append(values, 1) // Must move forwards
+	}
+
+	return NewVectorFromValues(values) // Return the magnitude vector
+}
+
+// Greater initializes a new vector with the greater values of the two vectors.
+func (vector *Vector) Greater(vec Vector) Vector {
+	values := vec.Values() // Get the second vector's values
+
+	// Iterate through the first vector's values
+	for i, val := range vector.Values() {
+		// Check the first vector's value is lesser
+		if val > values[i] {
+			values[i] = val // Set the final value at the current index to the first vector's value
+
+			continue // Continue
+		}
+	}
+
+	return NewVectorFromValues(values) // Return the final vector
+}
+
+// Lesser initializes a new vector with the lesser values of the two vectors.
+func (vector *Vector) Lesser(vec Vector) Vector {
+	values := vec.Values() // Get the second vector's values
+
+	// Iterate through the first vector's values
+	for i, val := range vector.Values() {
+		// Check the first vector's value is lesser
+		if val < values[i] {
+			values[i] = val // Set the final value at the current index to the first vector's value
+
+			continue // Continue
+		}
+	}
+
+	return NewVectorFromValues(values) // Return the final vector
 }
 
 // Add adds one vector to another.
@@ -184,3 +236,23 @@ func (vector *Vector) CornerAtLayer(upper bool, i int) Vector {
 }
 
 /* END EXPORTED METHODS */
+
+/* BEGIN INTERNAL METHODS */
+
+// deriveMagnitudeCondition constructs a condition such that when the
+// magnitude is negative, the condition will return false for values less than
+// the target.
+func (vector *Vector) deriveMagnitudeCondition(axis Axis) func(i, axisVal int64) bool {
+	// Check the magnitude is negative
+	if vector.Values()[axis] == -1 {
+		return func(i, axisVal int64) bool {
+			return i >= axisVal
+		} // Return true if the current index is greater than the axis val
+	}
+
+	return func(i, axisVal int64) bool {
+		return i <= axisVal
+	} // Return true if the current index is less than the axis val
+}
+
+/* END INTERNAL METHODS */
