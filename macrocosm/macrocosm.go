@@ -70,12 +70,8 @@ func (macrocosm *Macrocosm) Poll() {
 			i = int(macrocosm.Head[0].Z) // Set the outmermost param layer to the head's height
 		}
 
-		macrocosm.logger.Debugf("polling particle at vector {%d, %d, %d}", vec.X, vec.Y, vec.Z) // Log the pending poll
-
 		var params []activation.Parameter // Get a slice to store the particle's execution parameters in
 		paramsMutex := sync.Mutex{}       // Get a synchronization lock for the params slice
-
-		macrocosm.logger.Debugf("collecting call stack parameters (%d) for particle at vector {%d, %d, %d}", i, vec.X, vec.Y, vec.Z) // Log the pending parameterization
 
 		DoForVectorsBetween(vec.CornerAtLayer(true, int(math.Ceil(float64(i)/9.0))), vec.CornerAtLayer(false, int(math.Ceil(float64(i)/9.0))), func(pVec Vector) {
 			pParticle, ok := macrocosm.HasParticle(pVec) // Get the particle at the given vector
@@ -91,8 +87,6 @@ func (macrocosm *Macrocosm) Poll() {
 
 			paramsMutex.Unlock() // Unlock the params slice
 		}) // For each of the surrounding particles, check that
-
-		macrocosm.logger.Debugf("evaluating particle at vector {%d, %d, %d}...", vec.X, vec.Y, vec.Z) // Log the pending evaluation
 
 		output := particle.Net.Output(params...) // Evaluate the particle
 
