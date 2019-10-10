@@ -75,17 +75,12 @@ func NewComputation(computationType Operation, param Parameter) Computation {
 func RandomComputation(opts ...ComputationInitializationOption) Computation {
 	comp := NewComputation(Operation(rand.Intn(5)), RandomParameter()) // Initialize a random computation
 
-	return ApplyComputationOptions(comp, opts...) // Apply the options
-}
-
-// ApplyComputationOptions applies a variadic set of options to a given computation.
-func ApplyComputationOptions(comp Computation, opts ...ComputationInitializationOption) Computation {
-	// Check no more options
-	if len(opts) == 0 {
-		return comp // Return the final computation
+	// Iterate through the provided options
+	for _, opt := range opts {
+		comp = opt(comp) // Apply the option
 	}
 
-	return ApplyComputationOptions(opts[0](comp), opts[1:]...) // Apply the option
+	return comp // Return the final computation
 }
 
 // IsZero checks whether or not the computation has been initialized.

@@ -101,17 +101,12 @@ func RandomConditionalLink(opts ...ConditionalLinkInitializationOption) Conditio
 		Alive:       true,                    // All nodes are alive by default
 	} // Initialize a random link
 
-	return ApplyConditionalLinkOptions(link, opts...) // Apply the options
-}
-
-// ApplyConditionalLinkOptions applies a variadic set of options to a given conditional link.
-func ApplyConditionalLinkOptions(link ConditionalLink, opts ...ConditionalLinkInitializationOption) ConditionalLink {
-	// Check no more options
-	if len(opts) == 0 {
-		return link // Return the final link
+	// Iterate through the provided options
+	for _, opt := range opts {
+		link = opt(link) // Apply the option
 	}
 
-	return ApplyConditionalLinkOptions(opts[0](link), opts[1:]...) // Apply the rest of the options
+	return link // Return the final link
 }
 
 // CanActivate checks that the condition can activate, given a certain parameter.

@@ -59,17 +59,12 @@ func RandomNode(opts ...NodeInitializationOption) Node {
 		Alive:    true,                     // Set the node to alive by default
 	} // Initialize a random node
 
-	return ApplyNodeOptions(node, opts...) // Return the final node
-}
-
-// ApplyNodeOptions applies a variadic set of options to a given node.
-func ApplyNodeOptions(node Node, opts ...NodeInitializationOption) Node {
-	// Check no more options
-	if len(opts) == 0 {
-		return node // Return the final node
+	// Iterate through the provided options
+	for _, opt := range opts {
+		node = opt(node) // Apply the option
 	}
 
-	return ApplyNodeOptions(opts[0](node), opts[1:]...) // Apply all the options
+	return node // Return the final node
 }
 
 // IsZero checks whether or not the node has been initialized with valid

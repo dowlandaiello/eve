@@ -30,17 +30,12 @@ func RandomParticle(opts ...InitializationOption) Particle {
 		Net: activation.RandomNet(), // Set the particle's net to a random activation net
 	} // Initialize a particle
 
-	return ApplyParticleOptions(particle, opts...) // Return the final particle
-}
-
-// ApplyParticleOptions applies a variadic set of options to a given particle.
-func ApplyParticleOptions(particle Particle, opts ...InitializationOption) Particle {
-	// Check no more options
-	if len(opts) == 0 {
-		return particle // Return the final particle
+	// Iterate through the provided options
+	for _, opt := range opts {
+		particle = opt(particle) // Apply the option
 	}
 
-	return ApplyParticleOptions(opts[0](particle), opts[1:]...) // Apply the rest of the options
+	return particle // Return the final particle
 }
 
 // NumAliveNodes gets the number of alive nodes pertaining to the particle.

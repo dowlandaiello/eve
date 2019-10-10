@@ -32,17 +32,12 @@ func RandomNet(opts ...NetInitializationOption) Net {
 		RootNodes: RandomNodes(), // Set the root nodes of the net to a slice of randomly generated nodes
 	} // Initialize a random net
 
-	return ApplyNetOptions(net, opts...) // Return the final net
-}
-
-// ApplyNetOptions applies a variadic set of options to a given net.
-func ApplyNetOptions(net Net, opts ...NetInitializationOption) Net {
-	// Check no more options
-	if len(opts) == 0 {
-		return net // Return the final net
+	// Iterate through the provided options
+	for _, opt := range opts {
+		net = opt(net) // Apply the option
 	}
 
-	return ApplyNetOptions(opts[0](net), opts[1:]...) // Apply all the options
+	return net // Return the final net
 }
 
 // Output gets the output of an activation net.

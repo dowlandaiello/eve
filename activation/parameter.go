@@ -41,26 +41,23 @@ func NewErrorParameter(err error) Parameter {
 // RandomParameter initializes a new random parameter with the given
 // initialization options.
 func RandomParameter(opts ...ParameterInitializationOption) Parameter {
+	var param Parameter // Declare a buffer to store the parameter
+
 	// Check the param should be abstract
 	if rand.Intn(2) == 0 {
-		return ApplyParameterOptions(randomAbstract(), opts...) // Return a final random abstract value
+		param = randomAbstract() // Generate a param with a random abstract value
+	} else {
+		bitSize := rand.Intn(4) // Get a random bit size
+
+		param = randomParameterWithBitSize(bitSize) // Generate a random parameter from the generated bit size
 	}
 
-	bitSize := rand.Intn(4) // Get a random bit size
-
-	param := randomParameterWithBitSize(bitSize) // Generate a random parameter from the generated bit size
-
-	return ApplyParameterOptions(param, opts...) // Apply the options
-}
-
-// ApplyParameterOptions applies a variadic set of options to a given parameter.
-func ApplyParameterOptions(param Parameter, opts ...ParameterInitializationOption) Parameter {
-	// Check no more options
-	if len(opts) == 0 {
-		return param // Return the parameter
+	// Iterate through the provided options
+	for _, opt := range opts {
+		param = opt(param) // Apply the option
 	}
 
-	return ApplyParameterOptions(opts[0](param), opts[1:]...) // Apply the option
+	return param // Return the final parameter
 }
 
 // Copy copies the value of a given parameter into the parameter.
@@ -218,7 +215,7 @@ func div(x, y Parameter) Parameter {
 	if y.IsZero() {
 		return Parameter{} // Return a zero-val parameter
 	}
-	
+
 	x.I /= y.I     // Divide the two parameters
 	x.I16 /= y.I16 // Divide the two parameters
 	x.I32 /= y.I32 // Divide the two parameters

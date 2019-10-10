@@ -94,7 +94,7 @@ func (macrocosm *Macrocosm) Poll() {
 
 		macrocosm.Lock.Unlock() // Lock the macrocosm
 
-		macrocosm.logger.Debugf("particle at vector {%d, %d, %d} evaluated successfully: {i: %d, i16: %d, i32: %d, i64: %d, a: %+v}", vec.X, vec.Y, vec.Z, particle.Value.I, particle.Value.I16, particle.Value.I32, particle.Value.I64, particle.Value.A) // Log the successful evaluation
+		macrocosm.logger.Debugf("particle at vector {%d, %d, %d} evaluated successfully (%d inputs): {i: %d, i16: %d, i32: %d, i64: %d, a: %+v}", vec.X, vec.Y, vec.Z, i, particle.Value.I, particle.Value.I16, particle.Value.I32, particle.Value.I64, particle.Value.A) // Log the successful evaluation
 	}) // For each of the particles in the macrocosm, poll it
 }
 
