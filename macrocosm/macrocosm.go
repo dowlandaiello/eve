@@ -86,11 +86,12 @@ func (macrocosm *Macrocosm) Poll() {
 
 		output := particle.Net.Output(params...) // Evaluate the particle
 
-		particle.Value = output // Set the particle's value to the particle's output
+		particle.Value = output   // Set the particle's value to the particle's output
+		particle.Net.ApplyDecay() // DIE
 
 		macrocosm.Lock.Lock() // Lock the macrocosm
 
-		macrocosm.Particles[vec] = particle //
+		macrocosm.Particles[vec] = particle // Put the particle back in the macrocosm
 
 		macrocosm.Lock.Unlock() // Lock the macrocosm
 
