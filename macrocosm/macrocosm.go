@@ -34,6 +34,27 @@ func NewMacrocosm() Macrocosm {
 	} // Return the initialized macrocosm
 }
 
+// FlattenParticles converts a vector-particle mapping to a three-dimensional
+// slice of particles
+func (macrocosm *Macrocosm) FlattenParticles() (particles [][][]particle.Particle) {
+	// Iterate through the possible z coordinates in the macrocosm
+	for z := macrocosm.Head[0].Z; z >= macrocosm.Head[1].Z; z++ {
+		particles = append(particles, make([][]particle.Particle, 0)) // Add a new slice of particle slices to the flattened particle slice
+		// Iterate through the possible y coordinates in the macrocosm
+		for y := macrocosm.Head[0].Y; y >= macrocosm.Head[1].Y; y++ {
+			particles[z] = append(particles[z], make([]particle.Particle, 0)) // Add a new slice of particles to the flattened particle slice
+
+			// Iterate through the poossible x coordinates in the macrocosm
+			for x := macrocosm.Head[0].X; x >= macrocosm.Head[1].X; x++ {
+				// Get a vector for the current 3d position, add the particle from the macrocosm into the flattened particle slice leaf
+				particles[z][y] = append(particles[z][y], macrocosm.Particles[NewVector(x, y, z)])
+			}
+		}
+	}
+
+	return particles // Return the final flattened particles slice
+}
+
 // HasParticle checks that a particle exists at the given vector, vec.
 func (macrocosm *Macrocosm) HasParticle(vec Vector) (particle.Particle, bool) {
 	macrocosm.Lock.Lock() // Lock the macrocosm
