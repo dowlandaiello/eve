@@ -15,10 +15,16 @@ var (
 	// used to disable log persistence.
 	DisableLogPersistence = false
 
+	// DisableLogging is a global configuration variable that can be used to
+	// prevent logs from being emitted at runtime.
+	DisableLogging = false
+
 	// LogsDir is a global configuration variable used to specify the path to
 	// persist logs to.
 	LogsDir = "logs"
 )
+
+/* BEGIN EXPORTED METHODS */
 
 // CreateDirIfNonExistent creates a given directory if it does not already exist.
 func CreateDirIfNonExistent(dir string) error {
@@ -37,3 +43,5 @@ func CreateDirIfNonExistent(dir string) error {
 
 	return nil // No error occurred
 }
+
+/* END EXPORTED METHODS */

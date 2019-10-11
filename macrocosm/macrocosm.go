@@ -3,6 +3,7 @@ package macrocosm
 
 import (
 	"fmt"
+	"math"
 	"sync"
 
 	"github.com/juju/loggo"
@@ -10,6 +11,16 @@ import (
 	"github.com/dowlandaiello/eve/activation"
 	"github.com/dowlandaiello/eve/particle"
 )
+
+// FlattenedMacrocosm is an API-friendly macrocosm copy.
+type FlattenedMacrocosm struct {
+	Particles [][][]particle.Particle // the macrocosm's particles
+
+	Head  []Vector // the outermost non-nil particles
+	Shell []Vector // the outermost nil particles that should be created in the next round
+
+	Identifier int // the identifier of the macrocosm
+}
 
 // Macrocosm is a macrocosm, as defined in spec/eve.md.
 type Macrocosm struct {
@@ -20,9 +31,9 @@ type Macrocosm struct {
 
 	Identifier int // the identifier of the macrocosm
 
-	Lock sync.RWMutex // the macrocosm's lock
+	lock sync.RWMutex `graphql:"-"` // the macrocosm's lock
 
-	logger loggo.Logger // the macrocosm's logger
+	logger loggo.Logger `graphql:"-"` // the macrocosm's logger
 }
 
 /* BEGIN EXPORTED METHODS */
@@ -34,20 +45,28 @@ func NewMacrocosm() Macrocosm {
 	} // Return the initialized macrocosm
 }
 
+// Start starts the simulation in a blocking manner.
+func (macrocosm *Macrocosm) Start() {
+	for {
+		macrocosm.Expand() // Expand the macrocosm
+		macrocosm.Poll()   // Poll the macrocosm
+	}
+}
+
 // FlattenParticles converts a vector-particle mapping to a three-dimensional
 // slice of particles
 func (macrocosm *Macrocosm) FlattenParticles() (particles [][][]particle.Particle) {
 	// Iterate through the possible z coordinates in the macrocosm
-	for z := macrocosm.Head[0].Z; z >= macrocosm.Head[1].Z; z++ {
+	for z := macrocosm.Head[0].Z; z >= macrocosm.Head[1].Z; z-- {
 		particles = append(particles, make([][]particle.Particle, 0)) // Add a new slice of particle slices to the flattened particle slice
 		// Iterate through the possible y coordinates in the macrocosm
-		for y := macrocosm.Head[0].Y; y >= macrocosm.Head[1].Y; y++ {
-			particles[z] = append(particles[z], make([]particle.Particle, 0)) // Add a new slice of particles to the flattened particle slice
+		for y := macrocosm.Head[0].Y; y >= macrocosm.Head[1].Y; y-- {
+			particles[int(math.Abs(float64(z+macrocosm.Head[1].Z)))] = append(particles[int(math.Abs(float64(z+macrocosm.Head[1].Z)))], make([]particle.Particle, 0)) // Add a new slice of particles to the flattened particle slice
 
-			// Iterate through the poossible x coordinates in the macrocosm
-			for x := macrocosm.Head[0].X; x >= macrocosm.Head[1].X; x++ {
+			// Iterate through the possible x coordinates in the macrocosm
+			for x := macrocosm.Head[0].X; x >= macrocosm.Head[1].X; x-- {
 				// Get a vector for the current 3d position, add the particle from the macrocosm into the flattened particle slice leaf
-				particles[z][y] = append(particles[z][y], macrocosm.Particles[NewVector(x, y, z)])
+				particles[int(math.Abs(float64(z+macrocosm.Head[1].Z)))][int(math.Abs(float64(y+macrocosm.Head[1].Y)))] = append(particles[int(math.Abs(float64(z+macrocosm.Head[1].Z)))][int(math.Abs(float64(y+macrocosm.Head[1].Y)))], macrocosm.Particles[NewVector(x, y, z)])
 			}
 		}
 	}
@@ -57,11 +76,11 @@ func (macrocosm *Macrocosm) FlattenParticles() (particles [][][]particle.Particl
 
 // HasParticle checks that a particle exists at the given vector, vec.
 func (macrocosm *Macrocosm) HasParticle(vec Vector) (particle.Particle, bool) {
-	macrocosm.Lock.Lock() // Lock the macrocosm
+	macrocosm.lock.Lock() // Lock the macrocosm
 
 	particle, ok := macrocosm.Particles[vec] // Get an existence signal from the particles map
 
-	macrocosm.Lock.Unlock() // Unlock the macrocosm
+	macrocosm.lock.Unlock() // Unlock the macrocosm
 
 	return particle, ok // Return whether or not the particle exists
 }
@@ -110,11 +129,11 @@ func (macrocosm *Macrocosm) Poll() {
 		particle.Value = output   // Set the particle's value to the particle's output
 		particle.Net.ApplyDecay() // DIE
 
-		macrocosm.Lock.Lock() // Lock the macrocosm
+		macrocosm.lock.Lock() // Lock the macrocosm
 
 		macrocosm.Particles[vec] = particle // Put the particle back in the macrocosm
 
-		macrocosm.Lock.Unlock() // Lock the macrocosm
+		macrocosm.lock.Unlock() // Lock the macrocosm
 
 		macrocosm.logger.Debugf("particle at vector {%d, %d, %d} evaluated successfully (%d inputs): {i: %d, i16: %d, i32: %d, i64: %d, a: %+v}", vec.X, vec.Y, vec.Z, i, particle.Value.I, particle.Value.I16, particle.Value.I32, particle.Value.I64, particle.Value.A) // Log the successful evaluation
 	}) // For each of the particles in the macrocosm, poll it
@@ -152,16 +171,26 @@ func (macrocosm *Macrocosm) Expand() {
 		if _, ok := macrocosm.HasParticle(vec); !ok {
 			rand := particle.RandomParticle() // Generate a random particle
 
-			macrocosm.Lock.Lock() // Lock the macrocosm
+			macrocosm.lock.Lock() // Lock the macrocosm
 
 			macrocosm.Particles[vec] = rand // Set the particle to a random particle
 
-			macrocosm.Lock.Unlock() // Unlock the macrocosm
+			macrocosm.lock.Unlock() // Unlock the macrocosm
 		}
 	}) // Make each of the enclosing particles
 
 	macrocosm.Head = macrocosm.Shell                                                               // Set the head of the macrocosm to its old shell
 	macrocosm.Shell = [2]Vector{macrocosm.Shell[0].Corner(true), macrocosm.Shell[1].Corner(false)} // Expand the macrocosm's head
+}
+
+// Dereference copies the value from the given macrocosm reference.
+func Dereference(macrocosm *Macrocosm) FlattenedMacrocosm {
+	return FlattenedMacrocosm{
+		Particles:  macrocosm.FlattenParticles(),
+		Head:       macrocosm.Head[:],
+		Shell:      macrocosm.Shell[:],
+		Identifier: macrocosm.Identifier,
+	} // Return the value of the macrocosm (exclude lock, logger)
 }
 
 /* END EXPORTED METHODS */

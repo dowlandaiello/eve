@@ -26,7 +26,7 @@ type Parameter struct {
 	I64 int64
 
 	// an abstract parameter
-	A interface{}
+	A interface{} `graphql:"-"`
 }
 
 /* BEGIN EXPORTED METHODS */
