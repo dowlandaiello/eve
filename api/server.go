@@ -56,7 +56,11 @@ func (s *Server) registerQuery(schema *schemabuilder.Schema) {
 
 		// Iterate through the server's sims
 		for _, sim := range s.Simulations {
+			sim.Lock.Lock() // Lock the sim
+
 			sims = append(sims, macrocosm.Dereference(sim)) // Dereference the macrocosm
+
+			sim.Lock.Unlock() // Unlock the sim
 		}
 
 		return sims // Return the server's simulations

@@ -31,7 +31,7 @@ type Macrocosm struct {
 
 	Identifier int // the identifier of the macrocosm
 
-	lock sync.RWMutex `graphql:"-"` // the macrocosm's lock
+	Lock sync.RWMutex `graphql:"-"` // the macrocosm's lock
 
 	logger loggo.Logger `graphql:"-"` // the macrocosm's logger
 }
@@ -76,11 +76,11 @@ func (macrocosm *Macrocosm) FlattenParticles() (particles [][][]particle.Particl
 
 // HasParticle checks that a particle exists at the given vector, vec.
 func (macrocosm *Macrocosm) HasParticle(vec Vector) (particle.Particle, bool) {
-	macrocosm.lock.Lock() // Lock the macrocosm
+	macrocosm.Lock.Lock() // Lock the macrocosm
 
 	particle, ok := macrocosm.Particles[vec] // Get an existence signal from the particles map
 
-	macrocosm.lock.Unlock() // Unlock the macrocosm
+	macrocosm.Lock.Unlock() // Unlock the macrocosm
 
 	return particle, ok // Return whether or not the particle exists
 }
@@ -129,11 +129,11 @@ func (macrocosm *Macrocosm) Poll() {
 		particle.Value = output   // Set the particle's value to the particle's output
 		particle.Net.ApplyDecay() // DIE
 
-		macrocosm.lock.Lock() // Lock the macrocosm
+		macrocosm.Lock.Lock() // Lock the macrocosm
 
 		macrocosm.Particles[vec] = particle // Put the particle back in the macrocosm
 
-		macrocosm.lock.Unlock() // Lock the macrocosm
+		macrocosm.Lock.Unlock() // Lock the macrocosm
 
 		macrocosm.logger.Debugf("particle at vector {%d, %d, %d} evaluated successfully (%d inputs): {i: %d, i16: %d, i32: %d, i64: %d, a: %+v}", vec.X, vec.Y, vec.Z, i, particle.Value.I, particle.Value.I16, particle.Value.I32, particle.Value.I64, particle.Value.A) // Log the successful evaluation
 	}) // For each of the particles in the macrocosm, poll it
@@ -171,11 +171,11 @@ func (macrocosm *Macrocosm) Expand() {
 		if _, ok := macrocosm.HasParticle(vec); !ok {
 			rand := particle.RandomParticle() // Generate a random particle
 
-			macrocosm.lock.Lock() // Lock the macrocosm
+			macrocosm.Lock.Lock() // Lock the macrocosm
 
 			macrocosm.Particles[vec] = rand // Set the particle to a random particle
 
-			macrocosm.lock.Unlock() // Unlock the macrocosm
+			macrocosm.Lock.Unlock() // Unlock the macrocosm
 		}
 	}) // Make each of the enclosing particles
 

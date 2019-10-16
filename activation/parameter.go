@@ -20,10 +20,10 @@ type LockedParameter struct {
 // Parameter is a data type used to hold arguments for an operation.
 type Parameter struct {
 	// an integer parameter
-	I   int
-	I16 int16
-	I32 int32
-	I64 int64
+	I int
+
+	// a byte parameter
+	B []byte
 
 	// an abstract parameter
 	A interface{} `graphql:"-"`
@@ -44,12 +44,12 @@ func RandomParameter(opts ...ParameterInitializationOption) Parameter {
 	var param Parameter // Declare a buffer to store the parameter
 
 	// Check the param should be abstract
-	if rand.Intn(2) == 0 {
+	if rand := rand.Intn(3); rand == 0 {
 		param = randomAbstract() // Generate a param with a random abstract value
+	} else if rand == 1 {
+		param = randomBytes() // Generate a random parameter with a random byte slice value
 	} else {
-		bitSize := rand.Intn(4) // Get a random bit size
-
-		param = randomParameterWithBitSize(bitSize) // Generate a random parameter from the generated bit size
+		param = randomInt() // Generate a random parameter with a random int value
 	}
 
 	// Iterate through the provided options
@@ -64,9 +64,6 @@ func RandomParameter(opts ...ParameterInitializationOption) Parameter {
 func (p *Parameter) Copy(param Parameter) {
 	// Set each each of the parameter's values to that of the other param
 	p.I = param.I
-	p.I16 = param.I16
-	p.I32 = param.I32
-	p.I64 = param.I64
 	p.A = param.A
 }
 
@@ -110,7 +107,7 @@ func (p *Parameter) IsIdentity() bool {
 
 // IsZero checks if the parameter has any zero-value fields.
 func (p *Parameter) IsZero() bool {
-	return (p.I == 0 && p.I16 == 0 && p.I32 == 0 && p.I64 == 0) || p.A == nil // Return whether or not the parameter has any nil fields
+	return (p.I == 0 && len(p.B) == 0) || p.A == nil // Return whether or not the parameter has any nil fields
 }
 
 // IsNil checks if the parameter has any nil fields.
@@ -120,17 +117,17 @@ func (p *Parameter) IsNil() bool {
 
 // Equals checks whether or not two parameters are equivalent.
 func (p *Parameter) Equals(param *Parameter) bool {
-	return (p.I == param.I && p.I16 == param.I16 && p.I32 == param.I32 && p.I64 == param.I64) || p.A == param.A // Return whether or not these parameters are equivalent
+	return p.I == param.I || p.A == param.A // Return whether or not these parameters are equivalent
 }
 
 // LessThan checks whether or not one parameter is less than another parameter.
 func (p *Parameter) LessThan(param *Parameter) bool {
-	return p.I < param.I && p.I16 < param.I16 && p.I32 < param.I32 && p.I64 < param.I64 // Return the result
+	return p.I < param.I // Return the result
 }
 
 // GreaterThan checks whether or not one parameter is greater than another parameter.
 func (p *Parameter) GreaterThan(param *Parameter) bool {
-	return p.I > param.I && p.I16 > param.I16 && p.I32 > param.I32 && p.I64 > param.I64 // Return the result
+	return p.I > param.I // Return the result
 }
 
 /* END EXPORTED METHODS */
@@ -144,67 +141,41 @@ func randomAbstract() Parameter {
 	} // Return the abstract parameter
 }
 
-// randomParameterWithBitSize generates a new parameter with random fields up
-// to a certain bit size.
-func randomParameterWithBitSize(bitSize int) Parameter {
-	// Handle different sizes
-	switch bitSize {
-	case 0, 1:
-		r := rand.Int() // Get a random number
+// randomInt generates a new parameter with a random int value.
+func randomInt() Parameter {
+	return Parameter{
+		I: rand.Int(), // Generate a random int, set the param's i value to the int
+	} // Return the parameter
+}
 
-		return Parameter{
-			I:   r,        // Set the int val to a random int
-			I16: int16(r), // Set the int16 val to a random int
-			I32: int32(r), // Set the int32 val to a random int
-			I64: int64(r), // Set the int64 val to a random int
-		}
-	case 2:
-		r := rand.Int31() // Get a random 32bit number
+// randomBytes generates a new parameter with a random byte value.
+func randomBytes() Parameter {
+	buffer := make([]byte, 4) // Initialize a buffer to read the random byte into
 
-		return Parameter{
-			I:   0,        // Set the int val to zero
-			I16: 0,        // Set the int16 val to zero
-			I32: r,        // Set the int32 val to a random int32
-			I64: int64(r), // Set the int64 val to a random int32
-		}
-	case 3:
-		return Parameter{
-			I:   0,            // Set the int val to zero
-			I16: 0,            // Set the int16 val to zero
-			I32: 0,            // Set the int32 val to zero
-			I64: rand.Int63(), // Set the int64 val to a random int64
-		}
-	default:
-		return Parameter{} // Return a zero-value param
-	}
+	rand.Read(buffer) // Read a random byte into the buffer
+
+	return Parameter{
+		B: buffer, // Set the parameter's bytes
+	} // Return the parameter
 }
 
 // add adds two parameters. Leaves the abstract parameter untouched.
 func add(x, y Parameter) Parameter {
-	x.I += y.I     // Add the i8s of both parameters
-	x.I16 += y.I16 // Add the i16s of both parameters
-	x.I32 += y.I32 // Add the i32s of both parameters
-	x.I64 += y.I64 // Add the i64s of both parameters
+	x.I += y.I // Add the i8s of both parameters
 
 	return x // Return the final parmaeter
 }
 
 // sub subtracts two parameters. Leaves the abstract parameter untouched.
 func sub(x, y Parameter) Parameter {
-	x.I -= y.I     // Subtract the two parameters
-	x.I16 -= y.I16 // Subtract the two parameters
-	x.I32 -= y.I32 // Subtract the two parameters
-	x.I64 -= y.I64 // Subtract the two parameters
+	x.I -= y.I // Subtract the two parameters
 
 	return x // Return the final parameter
 }
 
 // mul multiplies two parameters. Leaves the abstract parameter untouched.
 func mul(x, y Parameter) Parameter {
-	x.I *= y.I     // Multiply the two parameters
-	x.I16 *= y.I16 // Multiply the two parameters
-	x.I32 *= y.I32 // Multiply the two parameters
-	x.I64 *= y.I64 // Multiply the two parameters
+	x.I *= y.I // Multiply the two parameters
 
 	return x // Return the final parameter
 }
@@ -216,10 +187,7 @@ func div(x, y Parameter) Parameter {
 		return Parameter{} // Return a zero-val parameter
 	}
 
-	x.I /= y.I     // Divide the two parameters
-	x.I16 /= y.I16 // Divide the two parameters
-	x.I32 /= y.I32 // Divide the two parameters
-	x.I64 /= y.I64 // Divide the two parameters
+	x.I /= y.I // Divide the two parameters
 
 	return x // Return the final parameter
 }
