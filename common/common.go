@@ -11,6 +11,9 @@ import (
 const ComputationalProwess = 2
 
 var (
+	// GlobalEntropy is the global seed for random computations.
+	GlobalEntropy = 5
+
 	// DisableLogPersistence is a global configuration variable that can be
 	// used to disable log persistence.
 	DisableLogPersistence = false

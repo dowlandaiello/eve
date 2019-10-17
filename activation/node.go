@@ -1,7 +1,11 @@
 // Package activation implements a simple activation net.
 package activation
 
-import "math/rand"
+import (
+	"math/rand"
+
+	"github.com/dowlandaiello/eve/common"
+)
 
 // NodeInitializationOption is an initialization option used to modify a node's
 // behavior.
@@ -31,7 +35,7 @@ func NewNode(function Computation, links []ConditionalLink) Node {
 // RandomNodes initializes a new random slice of nodes with the given
 // initialization options.
 func RandomNodes(opts ...[]NodeInitializationOption) []Node {
-	n := rand.Intn(69) // Get a random number of nodes to generate
+	n := rand.Intn(common.GlobalEntropy) // Get a random number of nodes to generate
 
 	var nodes []Node // Declare a buffer to store the generated nodes in
 

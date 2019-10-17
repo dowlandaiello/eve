@@ -9,6 +9,7 @@ import (
 	"github.com/juju/loggo"
 
 	"github.com/dowlandaiello/eve/activation"
+	"github.com/dowlandaiello/eve/common"
 	"github.com/dowlandaiello/eve/particle"
 )
 
@@ -129,14 +130,21 @@ func (macrocosm *Macrocosm) Poll() {
 		particle.Value = output   // Set the particle's value to the particle's output
 		particle.Net.ApplyDecay() // DIE
 
+		// Check no state changes
+		if particle.Value.IsZero() {
+			particle.Kill() // Kill the particle
+		}
+
 		macrocosm.Lock.Lock() // Lock the macrocosm
 
 		macrocosm.Particles[vec] = particle // Put the particle back in the macrocosm
 
 		macrocosm.Lock.Unlock() // Lock the macrocosm
 
-		macrocosm.logger.Debugf("particle at vector {%d, %d, %d} evaluated successfully (%d inputs): {i: %d, i16: %d, i32: %d, i64: %d, a: %+v}", vec.X, vec.Y, vec.Z, i, particle.Value.I, particle.Value.I16, particle.Value.I32, particle.Value.I64, particle.Value.A) // Log the successful evaluation
+		macrocosm.logger.Debugf("particle at vector {%d, %d, %d} evaluated successfully (%d inputs): {i: %d, a: %+v}", vec.X, vec.Y, vec.Z, i, particle.Value.I, particle.Value.A) // Log the successful evaluation
 	}) // For each of the particles in the macrocosm, poll it
+
+	common.GlobalEntropy *= common.GlobalEntropy / 2 // Increment the global entropy
 }
 
 // Expand generates a new round of particles, and attaches them to the existing

@@ -53,8 +53,16 @@ func (particle *Particle) NumAliveNodes() int {
 	return i // Return the number of alive particles
 }
 
+// Kill kills the particle.
+func (particle *Particle) Kill() {
+	// Iterate through the particle's root nodes
+	for i := range particle.Net.RootNodes {
+		particle.Net.RootNodes[i].Alive = false // Kill the node
+	}
+}
+
 // Alive checks whether or not the particle is alive.
-func (particle *Particle) Alive() bool {
+func (particle Particle) Alive() bool {
 	// Iterate through the particle's root nodes
 	for _, node := range particle.Net.RootNodes {
 		// Check the node is alive

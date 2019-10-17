@@ -127,7 +127,7 @@ func DoForVectorsBetween(a, b Vector, callback func(vec Vector)) {
 		}
 	}
 
-	// wg.Wait() // Wait for all of the callbacks to terminate
+	wg.Wait() // Wait for all of the callbacks to terminate
 }
 
 // Values gets a slice of the vector's values.

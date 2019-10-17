@@ -4,6 +4,8 @@ package activation
 import (
 	"math/rand"
 	"sync"
+
+	"github.com/dowlandaiello/eve/common"
 )
 
 // ParameterInitializationOption is an initialization option used to modify a
@@ -43,10 +45,12 @@ func NewErrorParameter(err error) Parameter {
 func RandomParameter(opts ...ParameterInitializationOption) Parameter {
 	var param Parameter // Declare a buffer to store the parameter
 
+	r := rand.Intn(3) // Get a random number
+
 	// Check the param should be abstract
-	if rand := rand.Intn(3); rand == 0 {
+	if r == 0 {
 		param = randomAbstract() // Generate a param with a random abstract value
-	} else if rand == 1 {
+	} else if r == 1 {
 		param = randomBytes() // Generate a random parameter with a random byte slice value
 	} else {
 		param = randomInt() // Generate a random parameter with a random int value
@@ -107,7 +111,7 @@ func (p *Parameter) IsIdentity() bool {
 
 // IsZero checks if the parameter has any zero-value fields.
 func (p *Parameter) IsZero() bool {
-	return (p.I == 0 && len(p.B) == 0) || p.A == nil // Return whether or not the parameter has any nil fields
+	return p.I == 0 && len(p.B) == 0 && p.A == nil // Return whether or not the parameter has any nil fields
 }
 
 // IsNil checks if the parameter has any nil fields.
@@ -144,7 +148,7 @@ func randomAbstract() Parameter {
 // randomInt generates a new parameter with a random int value.
 func randomInt() Parameter {
 	return Parameter{
-		I: rand.Int(), // Generate a random int, set the param's i value to the int
+		I: rand.Intn(common.GlobalEntropy), // Generate a random int, set the param's i value to the int
 	} // Return the parameter
 }
 
@@ -183,7 +187,7 @@ func mul(x, y Parameter) Parameter {
 // div divides two parameters. Leaves the abstract parameter untouched.
 func div(x, y Parameter) Parameter {
 	// Check the second param is zero
-	if y.IsZero() {
+	if y.I == 0 {
 		return Parameter{} // Return a zero-val parameter
 	}
 
