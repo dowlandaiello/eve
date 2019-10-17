@@ -133,6 +133,10 @@ func (macrocosm *Macrocosm) Poll() {
 		// Check no state changes
 		if particle.Value.IsZero() {
 			particle.Kill() // Kill the particle
+
+			macrocosm.logger.Debugf("particle at vector {%d, %d, %d} effectively dead; killing", vec.X, vec.Y, vec.Z) // Log the pending termination
+		} else {
+			macrocosm.logger.Debugf("particle at vector {%d, %d, %d} evaluated successfully (%d inputs): {i: %d, b: %v, a: %+v}", vec.X, vec.Y, vec.Z, i, particle.Value.I, particle.Value.B, particle.Value.A) // Log the successful evaluation
 		}
 
 		macrocosm.Lock.Lock() // Lock the macrocosm
@@ -140,11 +144,9 @@ func (macrocosm *Macrocosm) Poll() {
 		macrocosm.Particles[vec] = particle // Put the particle back in the macrocosm
 
 		macrocosm.Lock.Unlock() // Lock the macrocosm
-
-		macrocosm.logger.Debugf("particle at vector {%d, %d, %d} evaluated successfully (%d inputs): {i: %d, a: %+v}", vec.X, vec.Y, vec.Z, i, particle.Value.I, particle.Value.A) // Log the successful evaluation
 	}) // For each of the particles in the macrocosm, poll it
 
-	common.GlobalEntropy *= common.GlobalEntropy / 2 // Increment the global entropy
+	common.GlobalEntropy *= int(math.Ceil(float64(common.GlobalEntropy) / 10.0)) // Increment the global entropy
 }
 
 // Expand generates a new round of particles, and attaches them to the existing
