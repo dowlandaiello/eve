@@ -167,6 +167,23 @@ func randomBytes() Parameter {
 func add(x, y Parameter) Parameter {
 	x.I += y.I // Add the i8s of both parameters
 
+	// Check y has some byte slice contents
+	if len(y.B) > 0 {
+		var nBytes []byte // Get a buffer to store the new byte slice in
+
+		// Iterate through the bytes in b
+		for i, b := range y.B {
+			// Check that the second slice is larger that the receiving param
+			if i >= len(x.B) {
+				nBytes = append(nBytes, b) // Append the byte to the new byte slice
+
+				continue // Continue
+			}
+
+			nBytes = append(nBytes, x.B[i]+b) // Perform the addition operation, add the result ot the new byte slice
+		}
+	}
+
 	return x // Return the final parmaeter
 }
 
@@ -174,12 +191,44 @@ func add(x, y Parameter) Parameter {
 func sub(x, y Parameter) Parameter {
 	x.I -= y.I // Subtract the two parameters
 
+	// Check y has some byte slice contents
+	if len(y.B) > 0 {
+		var nBytes []byte // Get a buffer to store the new byte slice in
+
+		// Iterate through the bytes in b
+		for i, b := range y.B {
+			// Check that the second slice is larger that the receiving param
+			if i >= len(x.B) {
+				nBytes = append(nBytes, -b) // Append the negative form of the byte to the new byte slice (0 - n = -n)
+
+				continue // Continue
+			}
+
+			nBytes = append(nBytes, x.B[i]-b) // Perform the addition operation, add the result ot the new byte slice
+		}
+	}
+
 	return x // Return the final parameter
 }
 
 // mul multiplies two parameters. Leaves the abstract parameter untouched.
 func mul(x, y Parameter) Parameter {
 	x.I *= y.I // Multiply the two parameters
+
+	// Check y has some byte slice contents
+	if len(y.B) > 0 {
+		var nBytes []byte // Get a buffer to store the new byte slice in
+
+		// Iterate through the bytes in b
+		for i, b := range y.B {
+			// Check that the second slice is larger that the receiving param
+			if i >= len(x.B) {
+				break // All further entries will be zero
+			}
+
+			nBytes = append(nBytes, x.B[i]*b) // Perform the multiplication operation, add the result ot the new byte slice
+		}
+	}
 
 	return x // Return the final parameter
 }
@@ -192,6 +241,21 @@ func div(x, y Parameter) Parameter {
 	}
 
 	x.I /= y.I // Divide the two parameters
+
+	// Check y has some byte slice contents
+	if len(y.B) > 0 {
+		var nBytes []byte // Get a buffer to store the new byte slice in
+
+		// Iterate through the bytes in b
+		for i, b := range y.B {
+			// Check that the second slice is larger that the receiving param
+			if i >= len(x.B) {
+				break // All further entries will be zero
+			}
+
+			nBytes = append(nBytes, x.B[i]/b) // Perform the division operation, add the result ot the new byte slice
+		}
+	}
 
 	return x // Return the final parameter
 }
