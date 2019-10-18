@@ -5,27 +5,58 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
+	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/samsarahq/thunder/graphql"
 	"github.com/samsarahq/thunder/graphql/graphiql"
 	"github.com/samsarahq/thunder/graphql/introspection"
 	"github.com/samsarahq/thunder/graphql/schemabuilder"
 
+	"github.com/dowlandaiello/eve/common"
 	"github.com/dowlandaiello/eve/macrocosm"
 )
 
-// Server is a generic graphql-enabled web server.
+// Server is an API server.
 type Server struct {
-	Simulations []*macrocosm.Macrocosm
+	Simulations []*macrocosm.Macrocosm // the server's simulations
+
+	Databases []*bolt.DB // a database used to persist macrocosm frames
 }
 
 /* BEGIN EXPORTED METHODS */
 
-// NewServer initializes a new serever with the given set of macrocosms.
-func NewServer(sims []*macrocosm.Macrocosm) Server {
+// NewServer initializes a new
+func NewServer(sims []*macrocosm.Macrocosm) (Server, error) {
+	var databases []*bolt.DB // The databases that sim data will be stored in
+
+	baseDbPath := func(id int) string {
+		return filepath.FromSlash(fmt.Sprintf("%s/macrocosm_%d.db", common.DataDir, id)) // Return the db path
+	}
+
+	err := common.CreateDirIfNonExistent(common.DataDir) // Create the data dir
+	if err != nil {                                      // Check for errors
+		// Set the db path constructor to use an empty prefix dir
+		baseDbPath = func(id int) string {
+			return fmt.Sprintf("macrocosm_%d.db", id) // Return the db path
+		}
+	}
+
+	// Iterate through the provided simulations
+	for _, sim := range sims {
+		db, err := bolt.Open(baseDbPath(sim.Identifier), 666, &bolt.Options{Timeout: 500 * time.Millisecond, NoGrowSync: false}) // Open the database
+		if err != nil {                                                                                                          // Check for errors
+			return Server{Simulations: sims}, err // Return the error
+		}
+
+		databases = append(databases, db) // Add the db to the slice of databases
+	}
+
 	return Server{
-		Simulations: sims, // Set the server's sims
-	} // Return the server
+		Simulations: sims,
+		Databases:   databases,
+	}, nil // Return the server
 }
 
 // Serve starts serving the graphql API.

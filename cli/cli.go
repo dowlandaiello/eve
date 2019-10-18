@@ -35,13 +35,17 @@ func NewCLI() cli.App {
 			Usage:   "start an API server with the given number of simulations",
 			Action: func(c *cli.Context) error {
 				err := setupLogging(c) // Setup logging
-				if err != nil { // Check for errors
+				if err != nil {        // Check for errors
 					return err // Return found error
 				}
-				
+
 				sims := constructSimulations(c) // Generate the provided number of simulations
 
-				server := api.NewServer(sims)   // Initialize a new server
+				server, err := api.NewServer(sims) // Initialize a new server
+				if err != nil {                    // Check for errors
+					return err // Return the error
+				}
+
 				server.Serve(c.Int("api-port")) // Start serving
 
 				return nil // No error occurred, return nil
@@ -81,7 +85,7 @@ func NewCLI() cli.App {
 			Usage:   "start a given number of simulations",
 			Action: func(c *cli.Context) error {
 				err := setupLogging(c) // Setup logging
-				if err != nil { // Check for errors
+				if err != nil {        // Check for errors
 					return err // Return found error
 				}
 

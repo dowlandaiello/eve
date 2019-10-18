@@ -2,6 +2,7 @@
 package common
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -22,9 +23,13 @@ var (
 	// prevent logs from being emitted at runtime.
 	DisableLogging = false
 
+	// DataDir is a global configuration variable used to specify the path to
+	// persist application data to.
+	DataDir = "data"
+
 	// LogsDir is a global configuration variable used to specify the path to
 	// persist logs to.
-	LogsDir = "logs"
+	LogsDir = fmt.Sprintf("%s/logs", DataDir)
 )
 
 /* BEGIN EXPORTED METHODS */
