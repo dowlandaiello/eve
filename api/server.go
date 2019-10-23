@@ -5,7 +5,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"path/filepath"
 	"time"
 
@@ -71,28 +70,23 @@ func (s *Server) Serve(port int) {
 
 		go func(sim *macrocosm.Macrocosm, i int) {
 			for {
-				start := time.Now() // Get the time at which the macrocosm started expanding
+				// start := time.Now() // Get the time at which the macrocosm started expanding
 
 				sim.Expand() // Expand the macrocosm
 
 				sim.Poll() // Poll the macrocosm
 
 				err := s.Databases[i].Update(func(tx *bolt.Tx) error {
-					// Check global entropy should be increased
-					if diff := time.Now().Sub(start).Milliseconds() - common.TimeToExpand.Milliseconds(); diff > common.TimeToExpand.Milliseconds()/2 {
-						if common.GlobalEntropy-int(math.Abs(float64(diff/100))) > 0 {
-							common.GlobalEntropy -= int(math.Abs(float64(diff / 100))) // Decrement the global entropy
-						} else if common.GlobalEntropy-1 > 0 {
-							common.GlobalEntropy-- // Decrement the global entropy
-						}
-					} else if int64(math.Abs(float64(diff))) > common.TimeToExpand.Milliseconds()/2 {
-						fmt.Println("test2")
-						common.GlobalEntropy++ // Increment the global entropy
-					}
-
-					fmt.Println(common.GlobalEntropy)
-
-					fmt.Print("\n")
+					// // Check global entropy should be increased
+					// if diff := time.Now().Sub(start).Milliseconds()*2 - common.TimeToExpand.Milliseconds(); diff > common.TimeToExpand.Milliseconds()/2 {
+					// 	if common.GlobalEntropy-int(math.Abs(float64(diff/100))) > 0 {
+					// 		common.GlobalEntropy -= int(math.Abs(float64(diff / 100))) // Decrement the global entropy
+					// 	} else if common.GlobalEntropy-1 > 0 {
+					// 		common.GlobalEntropy-- // Decrement the global entropy
+					// 	}
+					// } else if int64(math.Abs(float64(diff))) > common.TimeToExpand.Milliseconds()/2 {
+					// 	common.GlobalEntropy++ // Increment the global entropy
+					// }
 
 					frames, err := tx.CreateBucketIfNotExists([]byte("system_frames")) // Get the frames bucket
 					if err != nil {                                                    // Check for errors
