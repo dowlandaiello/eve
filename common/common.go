@@ -5,15 +5,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
-
-// ComputationalProwess is a representation of the current capability of
-// computing systems at a current point in time.
-const ComputationalProwess = 2
 
 var (
 	// GlobalEntropy is the global seed for random computations.
 	GlobalEntropy = 5
+
+	// ComputationalDifficulty is a representation of the current capability of
+	// computing systems at a current point in time.
+	ComputationalDifficulty = 2
+
+	// TimeToExpand is a representation of the amount of time that the
+	// macrocosm should take to expand.
+	TimeToExpand = 15 * time.Millisecond
 
 	// DisableLogPersistence is a global configuration variable that can be
 	// used to disable log persistence.

@@ -3,26 +3,29 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
-	"net/http"
+	"math"
 	"path/filepath"
 	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/samsarahq/thunder/graphql"
-	"github.com/samsarahq/thunder/graphql/graphiql"
-	"github.com/samsarahq/thunder/graphql/introspection"
-	"github.com/samsarahq/thunder/graphql/schemabuilder"
+	"github.com/gin-gonic/gin"
 
 	"github.com/dowlandaiello/eve/common"
 	"github.com/dowlandaiello/eve/macrocosm"
 )
+
+// rootAPIPath is the root API access path.
+var rootAPIPath = "/api"
 
 // Server is an API server.
 type Server struct {
 	Simulations []*macrocosm.Macrocosm // the server's simulations
 
 	Databases []*bolt.DB // a database used to persist macrocosm frames
+
+	Router *gin.Engine // the API router
 }
 
 /* BEGIN EXPORTED METHODS */
@@ -45,8 +48,8 @@ func NewServer(sims []*macrocosm.Macrocosm) (Server, error) {
 
 	// Iterate through the provided simulations
 	for _, sim := range sims {
-		db, err := bolt.Open(baseDbPath(sim.Identifier), 666, &bolt.Options{Timeout: 500 * time.Millisecond, NoGrowSync: false}) // Open the database
-		if err != nil {                                                                                                          // Check for errors
+		db, err := bolt.Open(baseDbPath(sim.Identifier), 0644, &bolt.Options{Timeout: 5 * time.Second, NoGrowSync: false}) // Open the database
+		if err != nil {                                                                                                    // Check for errors
 			return Server{Simulations: sims}, err // Return the error
 		}
 
@@ -56,55 +59,117 @@ func NewServer(sims []*macrocosm.Macrocosm) (Server, error) {
 	return Server{
 		Simulations: sims,
 		Databases:   databases,
+		Router:      gin.Default(),
 	}, nil // Return the server
 }
 
 // Serve starts serving the graphql API.
 func (s *Server) Serve(port int) {
-	// Iterate through the server's simulations
-	for _, sim := range s.Simulations {
-		go sim.Start() // Start the simulation
+	// Iterate through the simulations
+	for i, sim := range s.Simulations {
+		s.setupRoutesForMacrocosm(sim) // Setup the server for the given simulation
+
+		go func(sim *macrocosm.Macrocosm, i int) {
+			for {
+				start := time.Now() // Get the time at which the macrocosm started expanding
+
+				sim.Expand() // Expand the macrocosm
+
+				sim.Poll() // Poll the macrocosm
+
+				err := s.Databases[i].Update(func(tx *bolt.Tx) error {
+					// Check global entropy should be increased
+					if diff := time.Now().Sub(start).Milliseconds() - common.TimeToExpand.Milliseconds(); diff > common.TimeToExpand.Milliseconds()/2 {
+						if common.GlobalEntropy-int(math.Abs(float64(diff/100))) > 0 {
+							common.GlobalEntropy -= int(math.Abs(float64(diff / 100))) // Decrement the global entropy
+						} else if common.GlobalEntropy-1 > 0 {
+							common.GlobalEntropy-- // Decrement the global entropy
+						}
+					} else if int64(math.Abs(float64(diff))) > common.TimeToExpand.Milliseconds()/2 {
+						fmt.Println("test2")
+						common.GlobalEntropy++ // Increment the global entropy
+					}
+
+					fmt.Println(common.GlobalEntropy)
+
+					fmt.Print("\n")
+
+					frames, err := tx.CreateBucketIfNotExists([]byte("system_frames")) // Get the frames bucket
+					if err != nil {                                                    // Check for errors
+						return err // Return the error
+					}
+
+					frame := macrocosm.SystemFrame{
+						Head:                    sim.Head[:],                    // set the head
+						Shell:                   sim.Shell[:],                   // set the shell
+						ComputationalDifficulty: common.ComputationalDifficulty, // set the computational difficulty
+						GlobalEntropy:           common.GlobalEntropy,           // set the global entropy
+					} // Generate a system frame
+
+					json, err := frame.MarshalJSON() // Marshall the frame to a JSON byte slice
+					if err != nil {                  // Check for errors
+						panic(err) // Panic
+					}
+
+					return frames.Put([]byte(fmt.Sprintf("frame_%d", frames.Stats().KeyN)), json) // Put the system frame in the database
+				}) // Update the database with new system frames
+
+				// Check for errors
+				if err != nil {
+					panic(err) // Panic
+				}
+			}
+		}(sim, i) // Run a callback that sets up db functionality for the sim
 	}
 
-	schema := s.schema()                           // Generate a schema
-	introspection.AddIntrospectionToSchema(schema) // I have no idea what this does, but everything breaks without it
-
-	http.Handle("/graphql", graphql.Handler(schema))                              // Start serving graphql
-	http.Handle("/graphiql/", http.StripPrefix("/graphiql/", graphiql.Handler())) // Start a graphiql handling server
-	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)                            // Start listening on the given port
+	s.Router.Run(fmt.Sprintf(":%d", port)) // Listen on the provided port
 }
 
 /* END EXPORTED METHODS */
 
 /* BEGIN INTERNAL METHODS */
 
-// registerQuery registers a base graphql query.
-func (s *Server) registerQuery(schema *schemabuilder.Schema) {
-	obj := schema.Query() // Get the query object from the provided schema
-
-	obj.FieldFunc("simulations", func() []macrocosm.FlattenedMacrocosm {
-		var sims []macrocosm.FlattenedMacrocosm // Declare a slice to store the values of the macrocosms in
-
-		// Iterate through the server's sims
-		for _, sim := range s.Simulations {
-			sim.Lock.Lock() // Lock the sim
-
-			sims = append(sims, macrocosm.Dereference(sim)) // Dereference the macrocosm
-
-			sim.Lock.Unlock() // Unlock the sim
+// setupRoutesForMacrocosm sets up all of the routes for the given macrocosm.
+func (s *Server) setupRoutesForMacrocosm(macrocosm *macrocosm.Macrocosm) {
+	s.Router.GET(fmt.Sprintf("%s/sim/macrocosm_%d", rootAPIPath, macrocosm.Identifier), func(c *gin.Context) {
+		json, err := json.Marshal(macrocosm) // Get a JSON response with the macrocosm
+		if err != nil {                      // Check for errors
+			panic(err) // Panic
 		}
 
-		return sims // Return the server's simulations
-	}) // Handle the simulations field
+		c.JSON(200, json) // Respond with the JSON
+	}) // Handle the root sim GET
+
+	s.setupSystemRoutesForMacrocosm(fmt.Sprintf("%s/sim/macrocosm_%d", rootAPIPath, macrocosm.Identifier), macrocosm) // Setup system routes
 }
 
-// schema builds a graphql schema.
-func (s *Server) schema() *graphql.Schema {
-	builder := schemabuilder.NewSchema() // Get a new schema builder
+// setupSystemRoutesForMacrocosm sets up all the system routes for the given
+// macrocosm.
+func (s *Server) setupSystemRoutesForMacrocosm(path string, sim *macrocosm.Macrocosm) {
+	s.Router.GET(fmt.Sprintf("%s/system", path), func(c *gin.Context) {
+		var respFrames []macrocosm.SystemFrame // The response frames
 
-	s.registerQuery(builder) // Register the query request with the given schema builder
+		err := s.Databases[sim.Identifier].View(func(tx *bolt.Tx) error {
+			frames := tx.Bucket([]byte("system_frames")) // Get the frames bucket
 
-	return builder.MustBuild() // Return the final schema
+			return frames.ForEach(func(k []byte, v []byte) error {
+				frame, err := macrocosm.UnmarshalSystemFrameJSON(v) // Unmarshal the system frame
+				if err != nil {                                     // Check for errors
+					return err // Return the error
+				}
+
+				respFrames = append(respFrames, *frame) // Append the frame to the slice of frames
+
+				return nil // No error occurred, return nil
+			}) // Iterate through the frames in the bucket
+		}) // Get the system frames
+
+		if err != nil { // Check for errors
+			panic(err) // Panic
+		}
+
+		c.JSON(200, respFrames) // Respond with the frames
+	}) // Handle the system frame call
 }
 
 /* END INTERNAL METHODS */

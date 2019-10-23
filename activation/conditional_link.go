@@ -65,7 +65,7 @@ func NewConditionalLink(condition Condition, comparator Parameter, destination N
 
 // RandomConditionalLinks initializes a slice of random conditional links.
 func RandomConditionalLinks(opts ...[]ConditionalLinkInitializationOption) []ConditionalLink {
-	n := rand.Intn(int(math.Pow(4, float64(rand.Intn(common.ComputationalProwess))))) // Get a random number of links to initialize
+	n := rand.Intn(int(math.Pow(4, float64(rand.Intn(common.ComputationalDifficulty))))) // Get a random number of links to initialize
 
 	var links []ConditionalLink // Declare a buffer to store the initialized links in
 

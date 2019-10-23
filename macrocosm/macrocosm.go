@@ -9,13 +9,12 @@ import (
 	"github.com/juju/loggo"
 
 	"github.com/dowlandaiello/eve/activation"
-	"github.com/dowlandaiello/eve/common"
 	"github.com/dowlandaiello/eve/particle"
 )
 
 // FlattenedMacrocosm is an API-friendly macrocosm copy.
 type FlattenedMacrocosm struct {
-	Particles [][][]particle.Particle // the macrocosm's particles
+	Particles [][][]particle.Particle `json:"-"` // the macrocosm's particles
 
 	Head  []Vector // the outermost non-nil particles
 	Shell []Vector // the outermost nil particles that should be created in the next round
@@ -25,7 +24,7 @@ type FlattenedMacrocosm struct {
 
 // Macrocosm is a macrocosm, as defined in spec/eve.md.
 type Macrocosm struct {
-	Particles map[Vector]particle.Particle // the macrocosm's particles
+	Particles map[Vector]particle.Particle `json:"-"` // the macrocosm's particles
 
 	Head  [2]Vector // the outermost non-nil particle
 	Shell [2]Vector // the outermost nil particle that should be created in the next round
@@ -145,8 +144,6 @@ func (macrocosm *Macrocosm) Poll() {
 
 		macrocosm.Lock.Unlock() // Lock the macrocosm
 	}) // For each of the particles in the macrocosm, poll it
-
-	common.GlobalEntropy *= int(math.Ceil(float64(common.GlobalEntropy) / 10.0)) // Increment the global entropy
 }
 
 // Expand generates a new round of particles, and attaches them to the existing
