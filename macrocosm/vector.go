@@ -261,7 +261,7 @@ func (vector *Vector) deriveMagnitudeCondition(axis Axis) func(i, axisVal int64)
 }
 
 // cornersAtParamCount gets the vectors required to satisfy a parameter count.
-func (vector *Vector) cornersAtParamCount(a, b Vector, numParams int, numGained int, round int) (Vector, Vector) {
+func (vector *Vector) cornersAtParamCount(a, b Vector, numParams, numGained, round int) (Vector, Vector) {
 	// Check satisfies number of parameters
 	if numGained >= numParams {
 		return a, b // Return the vectors

@@ -47,8 +47,8 @@ func NewServer(sims []*macrocosm.Macrocosm) (Server, error) {
 
 	// Iterate through the provided simulations
 	for _, sim := range sims {
-		db, err := bolt.Open(baseDbPath(sim.Identifier), 0644, &bolt.Options{Timeout: 5 * time.Second, NoGrowSync: false}) // Open the database
-		if err != nil {                                                                                                    // Check for errors
+		db, err := bolt.Open(baseDbPath(sim.Identifier), 0o644, &bolt.Options{Timeout: 5 * time.Second, NoGrowSync: false}) // Open the database
+		if err != nil {                                                                                                     // Check for errors
 			return Server{Simulations: sims}, err // Return the error
 		}
 
@@ -107,7 +107,6 @@ func (s *Server) Serve(port int) {
 
 					return frames.Put([]byte(fmt.Sprintf("frame_%d", frames.Stats().KeyN)), json) // Put the system frame in the database
 				}) // Update the database with new system frames
-
 				// Check for errors
 				if err != nil {
 					panic(err) // Panic
@@ -146,7 +145,7 @@ func (s *Server) setupSystemRoutesForMacrocosm(path string, sim *macrocosm.Macro
 		err := s.Databases[sim.Identifier].View(func(tx *bolt.Tx) error {
 			frames := tx.Bucket([]byte("system_frames")) // Get the frames bucket
 
-			return frames.ForEach(func(k []byte, v []byte) error {
+			return frames.ForEach(func(k, v []byte) error {
 				frame, err := macrocosm.UnmarshalSystemFrameJSON(v) // Unmarshal the system frame
 				if err != nil {                                     // Check for errors
 					return err // Return the error
@@ -157,7 +156,6 @@ func (s *Server) setupSystemRoutesForMacrocosm(path string, sim *macrocosm.Macro
 				return nil // No error occurred, return nil
 			}) // Iterate through the frames in the bucket
 		}) // Get the system frames
-
 		if err != nil { // Check for errors
 			panic(err) // Panic
 		}

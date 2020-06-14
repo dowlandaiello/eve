@@ -47,7 +47,7 @@ func CreateDirIfNonExistent(dir string) error {
 	}
 
 	if _, err := os.Stat(safeDir); os.IsNotExist(err) { // Check dir exists
-		err = os.MkdirAll(safeDir, 0755) // Create directory
+		err = os.MkdirAll(safeDir, 0o755) // Create directory
 
 		if err != nil { // Check for errors
 			return err // Return error

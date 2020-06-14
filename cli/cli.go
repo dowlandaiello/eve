@@ -164,8 +164,8 @@ func setupLogging(c *cli.Context) error {
 		return err // Return the found error
 	}
 
-	logFile, err := os.OpenFile(filepath.FromSlash(fmt.Sprintf("%s/logs_%s.txt", common.LogsDir, time.Now().Format("2006-01-02_15-04-05"))), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666) // Create log file
-	if err != nil {                                                                                                                                                                   // Check for errors
+	logFile, err := os.OpenFile(filepath.FromSlash(fmt.Sprintf("%s/logs_%s.txt", common.LogsDir, time.Now().Format("2006-01-02_15-04-05"))), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666) // Create log file
+	if err != nil {                                                                                                                                                                    // Check for errors
 		return err // Return found error
 	}
 
